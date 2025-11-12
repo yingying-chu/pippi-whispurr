@@ -101,20 +101,27 @@ struct PhotoThumbnailView: View {
     private func loadThumbnail() async {
         // Use PhotoManager's method to load a smaller version
         let options = PHImageRequestOptions()
-        options.deliveryMode = .opportunistic
+        options.deliveryMode = .fastFormat
         options.resizeMode = .fast
+        options.isSynchronous = false
+        options.isNetworkAccessAllowed = false
 
         let manager = PHImageManager.default()
         let targetSize = CGSize(width: 300, height: 300)
 
         image = await withCheckedContinuation { continuation in
+            var hasResumed = false
             manager.requestImage(
                 for: photo.asset,
                 targetSize: targetSize,
                 contentMode: .aspectFill,
                 options: options
-            ) { result, _ in
-                continuation.resume(returning: result)
+            ) { result, info in
+                // Only resume once - PHImageManager can call this multiple times
+                if !hasResumed {
+                    hasResumed = true
+                    continuation.resume(returning: result)
+                }
             }
         }
     }

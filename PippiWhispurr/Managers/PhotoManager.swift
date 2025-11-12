@@ -149,13 +149,18 @@ class PhotoManager: ObservableObject {
             options.isSynchronous = false
             options.isNetworkAccessAllowed = true
 
+            var hasResumed = false
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: CGSize(width: 512, height: 512),
                 contentMode: .aspectFit,
                 options: options
             ) { image, _ in
-                continuation.resume(returning: image)
+                // Only resume once - PHImageManager can call this multiple times
+                if !hasResumed {
+                    hasResumed = true
+                    continuation.resume(returning: image)
+                }
             }
         }
     }
@@ -166,13 +171,18 @@ class PhotoManager: ObservableObject {
             options.deliveryMode = .highQualityFormat
             options.isNetworkAccessAllowed = true
 
+            var hasResumed = false
             PHImageManager.default().requestImage(
                 for: asset,
                 targetSize: PHImageManagerMaximumSize,
                 contentMode: .aspectFit,
                 options: options
             ) { image, _ in
-                continuation.resume(returning: image)
+                // Only resume once - PHImageManager can call this multiple times
+                if !hasResumed {
+                    hasResumed = true
+                    continuation.resume(returning: image)
+                }
             }
         }
     }
