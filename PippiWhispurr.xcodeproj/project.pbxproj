@@ -7,35 +7,35 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA0001 /* PippiWhispurrApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0001 /* PippiWhispurrApp.swift */; };
-		AA0002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0006 /* ContentView.swift */; };
-		AA0003 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0007 /* CalendarView.swift */; };
-		AA0004 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0008 /* PhotoGridView.swift */; };
-		AA0005 /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0009 /* PhotoDetailView.swift */; };
-		AA0006 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000A /* ScannerView.swift */; };
-		AA0007 /* PetPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0003 /* PetPhoto.swift */; };
-		AA0008 /* PhotoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0004 /* PhotoManager.swift */; };
-		AA0009 /* PetDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0005 /* PetDetector.swift */; };
-		AA000B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000B /* Assets.xcassets */; };
+		2A0000010000000000000001 /* PippiWhispurrApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000001 /* PippiWhispurrApp.swift */; };
+		2A0000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000002 /* ContentView.swift */; };
+		2A0000010000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000003 /* Assets.xcassets */; };
+		2A0000010000000000000004 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000004 /* CalendarView.swift */; };
+		2A0000010000000000000005 /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000005 /* PhotoGridView.swift */; };
+		2A0000010000000000000006 /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000006 /* PhotoDetailView.swift */; };
+		2A0000010000000000000007 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000007 /* ScannerView.swift */; };
+		2A0000010000000000000008 /* PetPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000008 /* PetPhoto.swift */; };
+		2A0000010000000000000009 /* PhotoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000009 /* PhotoManager.swift */; };
+		2A000001000000000000000A /* PetDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000A /* PetDetector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BB0000 /* PippiWhispurr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PippiWhispurr.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BB0001 /* PippiWhispurrApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PippiWhispurrApp.swift; sourceTree = "<group>"; };
-		BB0002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BB0003 /* PetPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPhoto.swift; sourceTree = "<group>"; };
-		BB0004 /* PhotoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoManager.swift; sourceTree = "<group>"; };
-		BB0005 /* PetDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetector.swift; sourceTree = "<group>"; };
-		BB0006 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		BB0007 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
-		BB0008 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
-		BB0009 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
-		BB000A /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
-		BB000B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2B0000000000000000000001 /* PippiWhispurr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PippiWhispurr.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B0000010000000000000001 /* PippiWhispurrApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PippiWhispurrApp.swift; sourceTree = "<group>"; };
+		2B0000010000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2B0000010000000000000004 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000005 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000006 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000007 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000008 /* PetPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPhoto.swift; sourceTree = "<group>"; };
+		2B0000010000000000000009 /* PhotoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoManager.swift; sourceTree = "<group>"; };
+		2B000001000000000000000A /* PetDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetector.swift; sourceTree = "<group>"; };
+		2B000001000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		CC0001 /* Frameworks */ = {
+		2C0000000000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -45,74 +45,74 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		DD0001 = {
+		2D0000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				DD0002 /* PippiWhispurr */,
-				DD0010 /* Products */,
+				2D0000000000000000000002 /* PippiWhispurr */,
+				2D0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		DD0002 /* PippiWhispurr */ = {
+		2D0000000000000000000002 /* PippiWhispurr */ = {
 			isa = PBXGroup;
 			children = (
-				BB0001 /* PippiWhispurrApp.swift */,
-				BB0002 /* Info.plist */,
-				BB000B /* Assets.xcassets */,
-				DD0003 /* Models */,
-				DD0004 /* Managers */,
-				DD0005 /* Views */,
+				2B0000010000000000000001 /* PippiWhispurrApp.swift */,
+				2B000001000000000000000B /* Info.plist */,
+				2B0000010000000000000003 /* Assets.xcassets */,
+				2D0000000000000000000004 /* Views */,
+				2D0000000000000000000005 /* Models */,
+				2D0000000000000000000006 /* Managers */,
 			);
 			path = PippiWhispurr;
 			sourceTree = "<group>";
 		};
-		DD0003 /* Models */ = {
+		2D0000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BB0003 /* PetPhoto.swift */,
+				2B0000000000000000000001 /* PippiWhispurr.app */,
 			);
-			path = Models;
+			name = Products;
 			sourceTree = "<group>";
 		};
-		DD0004 /* Managers */ = {
+		2D0000000000000000000004 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				BB0004 /* PhotoManager.swift */,
-				BB0005 /* PetDetector.swift */,
-			);
-			path = Managers;
-			sourceTree = "<group>";
-		};
-		DD0005 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				BB0006 /* ContentView.swift */,
-				BB0007 /* CalendarView.swift */,
-				BB0008 /* PhotoGridView.swift */,
-				BB0009 /* PhotoDetailView.swift */,
-				BB000A /* ScannerView.swift */,
+				2B0000010000000000000002 /* ContentView.swift */,
+				2B0000010000000000000004 /* CalendarView.swift */,
+				2B0000010000000000000005 /* PhotoGridView.swift */,
+				2B0000010000000000000006 /* PhotoDetailView.swift */,
+				2B0000010000000000000007 /* ScannerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		DD0010 /* Products */ = {
+		2D0000000000000000000005 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				BB0000 /* PippiWhispurr.app */,
+				2B0000010000000000000008 /* PetPhoto.swift */,
 			);
-			name = Products;
+			path = Models;
+			sourceTree = "<group>";
+		};
+		2D0000000000000000000006 /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				2B0000010000000000000009 /* PhotoManager.swift */,
+				2B000001000000000000000A /* PetDetector.swift */,
+			);
+			path = Managers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EE0001 /* PippiWhispurr */ = {
+		2E0000000000000000000001 /* PippiWhispurr */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = FF0003 /* Build configuration list for PBXNativeTarget "PippiWhispurr" */;
+			buildConfigurationList = 2F0000000000000000000002 /* Build configuration list for PBXNativeTarget "PippiWhispurr" */;
 			buildPhases = (
-				EE0002 /* Sources */,
-				CC0001 /* Frameworks */,
-				EE0003 /* Resources */,
+				2E0000000000000000000002 /* Sources */,
+				2C0000000000000000000001 /* Frameworks */,
+				2E0000000000000000000003 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -120,25 +120,25 @@
 			);
 			name = PippiWhispurr;
 			productName = PippiWhispurr;
-			productReference = BB0000 /* PippiWhispurr.app */;
+			productReference = 2B0000000000000000000001 /* PippiWhispurr.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		GG0001 /* Project object */ = {
+		2E0000000000000000000000 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					EE0001 = {
+					2E0000000000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = FF0001 /* Build configuration list for PBXProject "PippiWhispurr" */;
+			buildConfigurationList = 2F0000000000000000000001 /* Build configuration list for PBXProject "PippiWhispurr" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -146,48 +146,48 @@
 				en,
 				Base,
 			);
-			mainGroup = DD0001;
-			productRefGroup = DD0010 /* Products */;
+			mainGroup = 2D0000000000000000000001;
+			productRefGroup = 2D0000000000000000000003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EE0001 /* PippiWhispurr */,
+				2E0000000000000000000001 /* PippiWhispurr */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		EE0003 /* Resources */ = {
+		2E0000000000000000000003 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA000B /* Assets.xcassets in Resources */,
+				2A0000010000000000000003 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		EE0002 /* Sources */ = {
+		2E0000000000000000000002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA0001 /* PippiWhispurrApp.swift in Sources */,
-				AA0002 /* ContentView.swift in Sources */,
-				AA0003 /* CalendarView.swift in Sources */,
-				AA0004 /* PhotoGridView.swift in Sources */,
-				AA0005 /* PhotoDetailView.swift in Sources */,
-				AA0006 /* ScannerView.swift in Sources */,
-				AA0007 /* PetPhoto.swift in Sources */,
-				AA0008 /* PhotoManager.swift in Sources */,
-				AA0009 /* PetDetector.swift in Sources */,
+				2A0000010000000000000002 /* ContentView.swift in Sources */,
+				2A0000010000000000000001 /* PippiWhispurrApp.swift in Sources */,
+				2A0000010000000000000004 /* CalendarView.swift in Sources */,
+				2A0000010000000000000005 /* PhotoGridView.swift in Sources */,
+				2A0000010000000000000006 /* PhotoDetailView.swift in Sources */,
+				2A0000010000000000000007 /* ScannerView.swift in Sources */,
+				2A0000010000000000000008 /* PetPhoto.swift in Sources */,
+				2A0000010000000000000009 /* PhotoManager.swift in Sources */,
+				2A000001000000000000000A /* PetDetector.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		HH0001 /* Debug */ = {
+		2F0000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -250,7 +250,7 @@
 			};
 			name = Debug;
 		};
-		HH0002 /* Release */ = {
+		2F0000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -306,14 +306,14 @@
 			};
 			name = Release;
 		};
-		HH0003 /* Debug */ = {
+		2F0000000000000000000005 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PippiWhispurr/Info.plist;
@@ -336,14 +336,14 @@
 			};
 			name = Debug;
 		};
-		HH0004 /* Release */ = {
+		2F0000000000000000000006 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = PippiWhispurr/Info.plist;
@@ -369,25 +369,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FF0001 /* Build configuration list for PBXProject "PippiWhispurr" */ = {
+		2F0000000000000000000001 /* Build configuration list for PBXProject "PippiWhispurr" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				HH0001 /* Debug */,
-				HH0002 /* Release */,
+				2F0000000000000000000003 /* Debug */,
+				2F0000000000000000000004 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		FF0003 /* Build configuration list for PBXNativeTarget "PippiWhispurr" */ = {
+		2F0000000000000000000002 /* Build configuration list for PBXNativeTarget "PippiWhispurr" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				HH0003 /* Debug */,
-				HH0004 /* Release */,
+				2F0000000000000000000005 /* Debug */,
+				2F0000000000000000000006 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = GG0001 /* Project object */;
+	rootObject = 2E0000000000000000000000 /* Project object */;
 }
