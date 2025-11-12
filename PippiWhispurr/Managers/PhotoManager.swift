@@ -35,7 +35,7 @@ class PhotoManager: ObservableObject {
     }
 
     func scanPhotoLibrary() async {
-        guard authorizationStatus == .authorized || authorizationStatus == .limited else {
+        if authorizationStatus != .authorized && authorizationStatus != .limited {
             await requestAuthorization()
             guard authorizationStatus == .authorized || authorizationStatus == .limited else {
                 return
