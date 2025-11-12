@@ -39,7 +39,7 @@ struct ScannerView: View {
                         .fontWeight(.bold)
 
                     if isScanning {
-                        Text("Analyzing your photo library for pet photos...")
+                        Text("Scanning \(photoManager.scannedPhotosCount) of \(photoManager.totalPhotosToScan) photos...")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -53,7 +53,7 @@ struct ScannerView: View {
                             .font(.headline)
                             .foregroundColor(.blue)
                     } else {
-                        Text("This will scan your entire photo library and identify photos containing pets.")
+                        Text("This will scan up to 1,000 of your most recent photos to identify pets. This helps the app run smoothly on devices with large photo libraries.")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -91,6 +91,20 @@ struct ScannerView: View {
                                     .padding()
                                     .frame(maxWidth: .infinity)
                                     .background(Color.green)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal, 40)
+                            }
+                        } else {
+                            Button(action: {
+                                photoManager.cancelScan()
+                                isScanning = false
+                            }) {
+                                Text("Cancel Scan")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.red)
                                     .cornerRadius(12)
                                     .padding(.horizontal, 40)
                             }
