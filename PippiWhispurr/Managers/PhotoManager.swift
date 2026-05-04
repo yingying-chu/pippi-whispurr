@@ -17,19 +17,23 @@ class PhotoManager: ObservableObject {
     @Published var scanProgress: Double = 0.0
     @Published var authorizationStatus: PHAuthorizationStatus = .notDetermined
     @Published var photosByDate: [Date: [PetPhoto]] = [:]
+    @Published var filteredPhotosByDate: [Date: [PetPhoto]] = [:]
     @Published var totalPhotosToScan: Int = 0
     @Published var scannedPhotosCount: Int = 0
+    @Published var activeFilter: PetPhoto.PetType? = nil
+    @Published var favoriteIDs: Set<String> = []
 
     private let petDetector = PetDetector()
     private var cancellables = Set<AnyCancellable>()
     private var scanTask: Task<Void, Never>?
 
-    // Limit to most recent photos to avoid memory issues with large libraries
     private let maxPhotosToScan = 1000
     private let batchSize = 20
+    private let favoritesKey = "favoritePhotoIDs"
 
     init() {
         checkAuthorizationStatus()
+        loadFavorites()
     }
 
     func checkAuthorizationStatus() {
@@ -193,19 +197,67 @@ class PhotoManager: ObservableObject {
 
         for photo in photos {
             let startOfDay = calendar.startOfDay(for: photo.date)
-            if grouped[startOfDay] != nil {
-                grouped[startOfDay]?.append(photo)
-            } else {
-                grouped[startOfDay] = [photo]
-            }
+            grouped[startOfDay, default: []].append(photo)
         }
 
         photosByDate = grouped
+        applyFilter()
     }
 
     func photosForDate(_ date: Date) -> [PetPhoto] {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        return photosByDate[startOfDay] ?? []
+        return filteredPhotosByDate[startOfDay] ?? []
+    }
+
+    func setFilter(_ filter: PetPhoto.PetType?) {
+        activeFilter = filter
+        applyFilter()
+    }
+
+    private func applyFilter() {
+        let filtered: [PetPhoto]
+        if let filter = activeFilter {
+            filtered = petPhotos.filter { $0.petType == filter }
+        } else {
+            filtered = petPhotos
+        }
+        updateFilteredPhotosByDate(filtered)
+    }
+
+    private func updateFilteredPhotosByDate(_ photos: [PetPhoto]) {
+        let calendar = Calendar.current
+        var grouped: [Date: [PetPhoto]] = [:]
+        for photo in photos {
+            let startOfDay = calendar.startOfDay(for: photo.date)
+            grouped[startOfDay, default: []].append(photo)
+        }
+        filteredPhotosByDate = grouped
+    }
+
+    func toggleFavorite(_ photo: PetPhoto) {
+        if favoriteIDs.contains(photo.id) {
+            favoriteIDs.remove(photo.id)
+        } else {
+            favoriteIDs.insert(photo.id)
+        }
+        saveFavorites()
+    }
+
+    func isFavorite(_ photo: PetPhoto) -> Bool {
+        favoriteIDs.contains(photo.id)
+    }
+
+    var favoritePhotos: [PetPhoto] {
+        petPhotos.filter { favoriteIDs.contains($0.id) }
+    }
+
+    private func loadFavorites() {
+        let saved = UserDefaults.standard.stringArray(forKey: favoritesKey) ?? []
+        favoriteIDs = Set(saved)
+    }
+
+    private func saveFavorites() {
+        UserDefaults.standard.set(Array(favoriteIDs), forKey: favoritesKey)
     }
 }

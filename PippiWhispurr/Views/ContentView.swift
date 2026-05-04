@@ -21,7 +21,13 @@ struct ContentView: View {
                 } else if photoManager.petPhotos.isEmpty && !photoManager.isScanning {
                     EmptyStateView(showingScanner: $showingScanner)
                 } else {
+                    StatsHeaderView()
+
+                    FilterBarView()
+
                     CalendarView(selectedDate: $selectedDate)
+
+                    Divider()
 
                     if let date = selectedDate {
                         PhotoGridView(date: date)
@@ -30,12 +36,10 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("Pet Calendar 🐾")
+            .navigationTitle("PiPi 🐾")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingScanner = true
-                    }) {
+                    Button(action: { showingScanner = true }) {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
@@ -46,6 +50,102 @@ struct ContentView: View {
         }
     }
 }
+
+// MARK: - Stats Header
+
+struct StatsHeaderView: View {
+    @EnvironmentObject var photoManager: PhotoManager
+
+    var dogCount: Int { photoManager.petPhotos.filter { $0.petType == .dog }.count }
+    var catCount: Int { photoManager.petPhotos.filter { $0.petType == .cat }.count }
+    var otherCount: Int { photoManager.petPhotos.filter { $0.petType == .other }.count }
+    var favoriteCount: Int { photoManager.favoriteIDs.count }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            StatPill(label: "Total", value: photoManager.petPhotos.count, color: .blue)
+            StatPill(label: "🐕", value: dogCount, color: .orange)
+            StatPill(label: "🐱", value: catCount, color: .purple)
+            StatPill(label: "❤️", value: favoriteCount, color: .red)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+struct StatPill: View {
+    let label: String
+    let value: Int
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Filter Bar
+
+struct FilterBarView: View {
+    @EnvironmentObject var photoManager: PhotoManager
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                FilterChip(label: "All", emoji: nil, isSelected: photoManager.activeFilter == nil) {
+                    photoManager.setFilter(nil)
+                }
+                FilterChip(label: "Dogs", emoji: "🐕", isSelected: photoManager.activeFilter == .dog) {
+                    photoManager.setFilter(.dog)
+                }
+                FilterChip(label: "Cats", emoji: "🐱", isSelected: photoManager.activeFilter == .cat) {
+                    photoManager.setFilter(.cat)
+                }
+                FilterChip(label: "Other", emoji: "🐾", isSelected: photoManager.activeFilter == .other) {
+                    photoManager.setFilter(.other)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .background(Color(.systemBackground))
+    }
+}
+
+struct FilterChip: View {
+    let label: String
+    let emoji: String?
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if let emoji = emoji {
+                    Text(emoji).font(.caption)
+                }
+                Text(label)
+                    .font(.subheadline)
+                    .fontWeight(isSelected ? .semibold : .regular)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(isSelected ? Color.blue : Color(.secondarySystemFill))
+            .foregroundColor(isSelected ? .white : .primary)
+            .cornerRadius(20)
+        }
+    }
+}
+
+// MARK: - Permission / Empty
 
 struct PermissionView: View {
     @EnvironmentObject var photoManager: PhotoManager
@@ -60,15 +160,13 @@ struct PermissionView: View {
                 .font(.title2)
                 .fontWeight(.bold)
 
-            Text("PippiWhispurr needs access to your photo library to scan and identify photos of your pets.")
+            Text("PiPi needs access to your photo library to scan and identify photos of your pets.")
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                 .padding(.horizontal)
 
             Button("Grant Access") {
-                Task {
-                    await photoManager.requestAuthorization()
-                }
+                Task { await photoManager.requestAuthorization() }
             }
             .buttonStyle(.borderedProminent)
         }
@@ -103,11 +201,15 @@ struct EmptyStateView: View {
     }
 }
 
+// MARK: - Recent Photos
+
 struct RecentPhotosView: View {
     @EnvironmentObject var photoManager: PhotoManager
 
     var recentPhotos: [PetPhoto] {
-        Array(photoManager.petPhotos.prefix(20))
+        Array(photoManager.petPhotos
+            .filter { photoManager.activeFilter == nil || $0.petType == photoManager.activeFilter }
+            .prefix(20))
     }
 
     var body: some View {
@@ -118,18 +220,25 @@ struct RecentPhotosView: View {
                     .padding(.horizontal)
                     .padding(.top)
 
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 8) {
-                    ForEach(recentPhotos) { photo in
-                        NavigationLink(destination: PhotoDetailView(photo: photo)) {
-                            PhotoThumbnailView(photo: photo)
+                if recentPhotos.isEmpty {
+                    Text("No photos match the current filter.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                } else {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 8) {
+                        ForEach(recentPhotos) { photo in
+                            NavigationLink(destination: PhotoDetailView(photo: photo)) {
+                                PhotoThumbnailView(photo: photo)
+                            }
                         }
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
         }
     }

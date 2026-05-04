@@ -14,10 +14,11 @@ struct PhotoDetailView: View {
     @State private var image: UIImage?
     @Environment(\.dismiss) var dismiss
 
+    private var isFavorite: Bool { photoManager.isFavorite(photo) }
+
     var body: some View {
         ZStack {
-            Color.black
-                .ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
             VStack {
                 if let image = image {
@@ -28,9 +29,9 @@ struct PhotoDetailView: View {
                 } else {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
-                // Photo info
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text(photo.petType.emoji)
@@ -48,6 +49,15 @@ struct PhotoDetailView: View {
 
                         Spacer()
 
+                        Button(action: { photoManager.toggleFavorite(photo) }) {
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                .font(.title2)
+                                .foregroundColor(isFavorite ? .red : .white)
+                                .padding(8)
+                                .background(Color.white.opacity(0.15))
+                                .clipShape(Circle())
+                        }
+
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("Confidence")
                                 .font(.caption)
@@ -59,11 +69,10 @@ struct PhotoDetailView: View {
                         }
                     }
 
-                    if let location = photo.asset.location {
+                    if photo.asset.location != nil {
                         HStack {
                             Image(systemName: "location.fill")
                                 .foregroundColor(.white.opacity(0.6))
-
                             Text("Location available")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
@@ -75,8 +84,16 @@ struct PhotoDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { photoManager.toggleFavorite(photo) }) {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .foregroundColor(isFavorite ? .red : .primary)
+                }
+            }
+        }
         .task {
-            await loadFullImage()
+            image = await photoManager.loadFullImage(for: photo.asset)
         }
     }
 
@@ -85,9 +102,5 @@ struct PhotoDetailView: View {
         formatter.dateStyle = .long
         formatter.timeStyle = .short
         return formatter.string(from: photo.date)
-    }
-
-    private func loadFullImage() async {
-        image = await photoManager.loadFullImage(for: photo.asset)
     }
 }

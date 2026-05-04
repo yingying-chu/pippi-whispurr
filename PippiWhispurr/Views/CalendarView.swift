@@ -118,12 +118,12 @@ struct CalendarView: View {
 
     private func hasPhotos(for date: Date) -> Bool {
         let startOfDay = calendar.startOfDay(for: date)
-        return photoManager.photosByDate[startOfDay] != nil
+        return photoManager.filteredPhotosByDate[startOfDay] != nil
     }
 
     private func photoCount(for date: Date) -> Int {
         let startOfDay = calendar.startOfDay(for: date)
-        return photoManager.photosByDate[startOfDay]?.count ?? 0
+        return photoManager.filteredPhotosByDate[startOfDay]?.count ?? 0
     }
 
     private func previousMonth() {

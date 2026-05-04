@@ -60,6 +60,7 @@ struct PhotoGridView: View {
 }
 
 struct PhotoThumbnailView: View {
+    @EnvironmentObject var photoManager: PhotoManager
     let photo: PetPhoto
     @State private var image: UIImage?
 
@@ -78,18 +79,26 @@ struct PhotoThumbnailView: View {
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: geometry.size.width, height: geometry.size.width)
                         .cornerRadius(8)
-                        .overlay(
-                            ProgressView()
-                        )
+                        .overlay(ProgressView())
                 }
 
-                // Pet type badge
-                Text(photo.petType.emoji)
-                    .font(.caption)
-                    .padding(6)
-                    .background(Color.white.opacity(0.9))
-                    .cornerRadius(6)
-                    .padding(6)
+                VStack(alignment: .trailing, spacing: 4) {
+                    if photoManager.isFavorite(photo) {
+                        Image(systemName: "heart.fill")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(6)
+                            .background(Color.white.opacity(0.9))
+                            .cornerRadius(6)
+                    }
+
+                    Text(photo.petType.emoji)
+                        .font(.caption)
+                        .padding(6)
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(6)
+                }
+                .padding(6)
             }
         }
         .aspectRatio(1, contentMode: .fit)

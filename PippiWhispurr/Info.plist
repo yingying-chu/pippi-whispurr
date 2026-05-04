@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>PippiWhispurr</string>
+    <string>PiPi</string>
     <key>CFBundleDisplayName</key>
-    <string>Pippi Whispurr</string>
+    <string>PiPi</string>
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>PippiWhispurr needs access to your photo library to scan and identify photos of your pets for the pet calendar.</string>
+    <string>PiPi needs access to your photo library to scan and identify photos of your pets for the pet calendar.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>PippiWhispurr needs permission to save photos.</string>
+    <string>PiPi needs permission to save photos.</string>
     <key>UILaunchScreen</key>
     <dict/>
 </dict>
