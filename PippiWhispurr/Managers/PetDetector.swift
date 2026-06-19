@@ -23,23 +23,15 @@ class PetDetector {
         return await withCheckedContinuation { continuation in
             let request = VNRecognizeAnimalsRequest { request, error in
                 guard error == nil,
-                      let results = request.results as? [VNRecognizedObjectObservation],
-                      let firstResult = results.first else {
+                      let results = request.results as? [VNRecognizedObjectObservation] else {
                     continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
                     return
                 }
 
                 // VNRecognizeAnimalsRequest can detect cats and dogs
-                let labels = firstResult.labels
-                var bestLabel: VNClassificationObservation?
-                var bestConfidence: Float = 0.0
-
-                for label in labels {
-                    if label.confidence > bestConfidence {
-                        bestConfidence = label.confidence
-                        bestLabel = label
-                    }
-                }
+                let bestLabel = results
+                    .flatMap(\.labels)
+                    .max { $0.confidence < $1.confidence }
 
                 guard let label = bestLabel else {
                     continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
@@ -58,17 +50,37 @@ class PetDetector {
 
                 continuation.resume(returning: DetectionResult(
                     petType: petType,
-                    confidence: bestConfidence
+                    confidence: label.confidence
                 ))
             }
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            let handler = VNImageRequestHandler(
+                cgImage: cgImage,
+                orientation: image.imageOrientation.cgImageOrientation,
+                options: [:]
+            )
 
             do {
                 try handler.perform([request])
             } catch {
                 continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
             }
+        }
+    }
+}
+
+private extension UIImage.Orientation {
+    var cgImageOrientation: CGImagePropertyOrientation {
+        switch self {
+        case .up: return .up
+        case .upMirrored: return .upMirrored
+        case .down: return .down
+        case .downMirrored: return .downMirrored
+        case .left: return .left
+        case .leftMirrored: return .leftMirrored
+        case .right: return .right
+        case .rightMirrored: return .rightMirrored
+        @unknown default: return .up
         }
     }
 }

@@ -16,7 +16,7 @@ struct PetPhoto: Identifiable, Hashable {
     let confidence: Float
     let petType: PetType
 
-    enum PetType: String, CaseIterable {
+    enum PetType: String, CaseIterable, Codable {
         case dog = "Dog"
         case cat = "Cat"
         case other = "Other Pet"

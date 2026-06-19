@@ -17,6 +17,9 @@
 		2A0000010000000000000008 /* PetPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000008 /* PetPhoto.swift */; };
 		2A0000010000000000000009 /* PhotoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000009 /* PhotoManager.swift */; };
 		2A000001000000000000000A /* PetDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000A /* PetDetector.swift */; };
+		2A000001000000000000000B /* StoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000C /* StoryModels.swift */; };
+		2A000001000000000000000C /* StoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000D /* StoryStore.swift */; };
+		2A000001000000000000000D /* PetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000E /* PetViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +35,9 @@
 		2B0000010000000000000009 /* PhotoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoManager.swift; sourceTree = "<group>"; };
 		2B000001000000000000000A /* PetDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetector.swift; sourceTree = "<group>"; };
 		2B000001000000000000000B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2B000001000000000000000C /* StoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryModels.swift; sourceTree = "<group>"; };
+		2B000001000000000000000D /* StoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryStore.swift; sourceTree = "<group>"; };
+		2B000001000000000000000E /* PetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +88,7 @@
 				2B0000010000000000000005 /* PhotoGridView.swift */,
 				2B0000010000000000000006 /* PhotoDetailView.swift */,
 				2B0000010000000000000007 /* ScannerView.swift */,
+				2B000001000000000000000E /* PetViews.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -90,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				2B0000010000000000000008 /* PetPhoto.swift */,
+				2B000001000000000000000C /* StoryModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -99,6 +107,7 @@
 			children = (
 				2B0000010000000000000009 /* PhotoManager.swift */,
 				2B000001000000000000000A /* PetDetector.swift */,
+				2B000001000000000000000D /* StoryStore.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -181,6 +190,9 @@
 				2A0000010000000000000008 /* PetPhoto.swift in Sources */,
 				2A0000010000000000000009 /* PhotoManager.swift in Sources */,
 				2A000001000000000000000A /* PetDetector.swift in Sources */,
+				2A000001000000000000000B /* StoryModels.swift in Sources */,
+				2A000001000000000000000C /* StoryStore.swift in Sources */,
+				2A000001000000000000000D /* PetViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

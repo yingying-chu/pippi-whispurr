@@ -89,8 +89,7 @@ struct CalendarView: View {
     }
 
     private var daysInMonth: [Date?] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth),
-              let monthFirstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) else {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else {
             return []
         }
 
