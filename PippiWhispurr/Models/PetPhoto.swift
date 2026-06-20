@@ -15,6 +15,7 @@ struct PetPhoto: Identifiable, Hashable {
     let date: Date
     let confidence: Float
     let petType: PetType
+    var semanticLabels: [String] = []
 
     enum PetType: String, CaseIterable, Codable {
         case dog = "Dog"

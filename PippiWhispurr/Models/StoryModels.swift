@@ -25,6 +25,7 @@ struct PetProfile: Identifiable, Codable, Hashable {
     var species: String
     var breed: String?
     var gender: Gender?
+    var isSpayedOrNeutered: Bool?
     var foodName: String?
     var foodBrand: String?
     var birthday: Date?
@@ -41,6 +42,7 @@ struct PetProfile: Identifiable, Codable, Hashable {
         species: String,
         breed: String? = nil,
         gender: Gender? = nil,
+        isSpayedOrNeutered: Bool? = nil,
         foodName: String? = nil,
         foodBrand: String? = nil,
         birthday: Date? = nil,
@@ -56,6 +58,7 @@ struct PetProfile: Identifiable, Codable, Hashable {
         self.species = species
         self.breed = breed
         self.gender = gender
+        self.isSpayedOrNeutered = isSpayedOrNeutered
         self.foodName = foodName
         self.foodBrand = foodBrand
         self.birthday = birthday
@@ -72,6 +75,7 @@ struct ScanHistory: Codable {
     var analyzedPhotoIdentifiers: Set<String> = []
     var lastCompletedAt: Date?
     var completedBatchCount: Int = 0
+    var photosPerSecond: Double?
 }
 
 struct PhotoRecord: Identifiable, Codable, Hashable {
@@ -81,6 +85,8 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
     var captureDate: Date
     var detectedPetType: PetPhoto.PetType
     var detectionConfidence: Float
+    var semanticLabels: [String]?
+    var semanticAnalysisVersion: Int?
     var assignedPetIDs: Set<UUID>
     var isFavorite: Bool
     var caption: String
@@ -92,6 +98,8 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
         captureDate: Date,
         detectedPetType: PetPhoto.PetType,
         detectionConfidence: Float,
+        semanticLabels: [String]? = nil,
+        semanticAnalysisVersion: Int? = nil,
         assignedPetIDs: Set<UUID> = [],
         isFavorite: Bool = false,
         caption: String = "",
@@ -102,6 +110,8 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
         self.captureDate = captureDate
         self.detectedPetType = detectedPetType
         self.detectionConfidence = detectionConfidence
+        self.semanticLabels = semanticLabels
+        self.semanticAnalysisVersion = semanticAnalysisVersion
         self.assignedPetIDs = assignedPetIDs
         self.isFavorite = isFavorite
         self.caption = caption
@@ -219,14 +229,74 @@ struct Milestone: Identifiable, Codable, Hashable {
     }
 }
 
+struct HealthCheckIn: Identifiable, Codable, Hashable {
+    enum Level: String, Codable, CaseIterable {
+        case low
+        case normal
+        case high
+    }
+
+    enum Mood: String, Codable, CaseIterable {
+        case happy
+        case calm
+        case playful
+        case anxious
+        case unwell
+    }
+
+    enum WeightUnit: String, Codable, CaseIterable {
+        case pounds
+        case kilograms
+    }
+
+    let id: UUID
+    var petID: UUID
+    var date: Date
+    var appetite: Level
+    var energy: Level
+    var mood: Mood
+    var weight: Double?
+    var weightUnit: WeightUnit
+    var notes: String
+    let createdAt: Date
+    var updatedAt: Date
+
+    init(
+        id: UUID = UUID(),
+        petID: UUID,
+        date: Date = Date(),
+        appetite: Level = .normal,
+        energy: Level = .normal,
+        mood: Mood = .calm,
+        weight: Double? = nil,
+        weightUnit: WeightUnit = .pounds,
+        notes: String = "",
+        createdAt: Date = Date(),
+        updatedAt: Date = Date()
+    ) {
+        self.id = id
+        self.petID = petID
+        self.date = date
+        self.appetite = appetite
+        self.energy = energy
+        self.mood = mood
+        self.weight = weight
+        self.weightUnit = weightUnit
+        self.notes = notes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
 struct StoryData: Codable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
     var schemaVersion: Int = currentSchemaVersion
     var pets: [PetProfile] = []
     var photos: [PhotoRecord] = []
     var memories: [MemoryEntry] = []
     var milestones: [Milestone] = []
+    var healthCheckIns: [HealthCheckIn] = []
     var scanHistory: ScanHistory = ScanHistory()
 
     init(
@@ -235,6 +305,7 @@ struct StoryData: Codable {
         photos: [PhotoRecord] = [],
         memories: [MemoryEntry] = [],
         milestones: [Milestone] = [],
+        healthCheckIns: [HealthCheckIn] = [],
         scanHistory: ScanHistory = ScanHistory()
     ) {
         self.schemaVersion = schemaVersion
@@ -242,6 +313,7 @@ struct StoryData: Codable {
         self.photos = photos
         self.memories = memories
         self.milestones = milestones
+        self.healthCheckIns = healthCheckIns
         self.scanHistory = scanHistory
     }
 
@@ -251,6 +323,7 @@ struct StoryData: Codable {
         case photos
         case memories
         case milestones
+        case healthCheckIns
         case scanHistory
     }
 
@@ -261,6 +334,7 @@ struct StoryData: Codable {
         photos = try container.decodeIfPresent([PhotoRecord].self, forKey: .photos) ?? []
         memories = try container.decodeIfPresent([MemoryEntry].self, forKey: .memories) ?? []
         milestones = try container.decodeIfPresent([Milestone].self, forKey: .milestones) ?? []
+        healthCheckIns = try container.decodeIfPresent([HealthCheckIn].self, forKey: .healthCheckIns) ?? []
         scanHistory = try container.decodeIfPresent(ScanHistory.self, forKey: .scanHistory) ?? ScanHistory()
     }
 }

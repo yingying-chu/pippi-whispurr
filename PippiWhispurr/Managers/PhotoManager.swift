@@ -21,6 +21,9 @@ class PhotoManager: ObservableObject {
     @Published var totalPhotosToScan: Int = 0
     @Published var scannedPhotosCount: Int = 0
     @Published var scanBatchSize = 1000
+    @Published var libraryPhotoCount = 0
+    @Published var remainingPhotoCount = 0
+    @Published var estimatedSecondsRemaining: TimeInterval?
     @Published var lastBatchHadNoPhotos = false
     @Published var activeFilter: PetPhoto.PetType? = nil
     @Published var showsFavoritesOnly = false
@@ -32,6 +35,7 @@ class PhotoManager: ObservableObject {
     private var scanTask: Task<Void, Never>?
 
     private let batchSize = 20
+    private let currentSemanticAnalysisVersion = 2
 
     var analyzedPhotosCount: Int {
         storyStore.scanHistory.analyzedPhotoIdentifiers.count
@@ -39,6 +43,15 @@ class PhotoManager: ObservableObject {
 
     var lastCompletedScanDate: Date? {
         storyStore.scanHistory.lastCompletedAt
+    }
+
+    var estimatedPhotosPerSecond: Double {
+        storyStore.scanHistory.photosPerSecond ?? 50
+    }
+
+    var estimatedTotalSeconds: TimeInterval? {
+        guard remainingPhotoCount > 0 else { return nil }
+        return Double(remainingPhotoCount) / max(estimatedPhotosPerSecond, 1)
     }
 
     convenience init() {
@@ -60,6 +73,7 @@ class PhotoManager: ObservableObject {
 
         if authorizationStatus == .authorized || authorizationStatus == .limited {
             restorePersistedPhotos()
+            refreshLibrarySummary()
         }
     }
 
@@ -72,7 +86,22 @@ class PhotoManager: ObservableObject {
         authorizationStatus = status
         if status == .authorized || status == .limited {
             restorePersistedPhotos()
+            refreshLibrarySummary()
         }
+    }
+
+    func prepareScanSummary() async {
+        if authorizationStatus != .authorized && authorizationStatus != .limited {
+            await requestAuthorization()
+        } else {
+            refreshLibrarySummary()
+        }
+    }
+
+    func scanAllRemainingPhotos() async {
+        refreshLibrarySummary()
+        scanBatchSize = max(remainingPhotoCount, 1)
+        await scanPhotoLibrary()
     }
 
     func scanPhotoLibrary() async {
@@ -87,10 +116,12 @@ class PhotoManager: ObservableObject {
         scanTask?.cancel()
 
         scanTask = Task {
+            let scanStartedAt = Date()
             isScanning = true
             scanProgress = 0.0
             scannedPhotosCount = 0
             lastBatchHadNoPhotos = false
+            estimatedSecondsRemaining = estimatedTotalSeconds
             var detectedPhotos: [PetPhoto] = []
             var allVisiblePhotos = Dictionary(
                 uniqueKeysWithValues: petPhotos.map { ($0.id, $0) }
@@ -100,8 +131,14 @@ class PhotoManager: ObservableObject {
             fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
 
             let allPhotos = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+            let needsSemanticUpgrade = Set(
+                storyStore.photos
+                    .filter { $0.semanticAnalysisVersion != currentSemanticAnalysisVersion }
+                    .map(\.assetIdentifier)
+            )
             let alreadyAnalyzed = storyStore.scanHistory.analyzedPhotoIdentifiers
                 .union(storyStore.photos.map(\.assetIdentifier))
+                .subtracting(needsSemanticUpgrade)
             var photosForThisBatch: [PHAsset] = []
             photosForThisBatch.reserveCapacity(scanBatchSize)
 
@@ -151,6 +188,11 @@ class PhotoManager: ObservableObject {
                     processedCount += 1
                     scannedPhotosCount = processedCount
                     scanProgress = Double(processedCount) / Double(totalCount)
+                    let elapsed = Date().timeIntervalSince(scanStartedAt)
+                    if processedCount >= 20 && elapsed > 0 {
+                        let currentRate = Double(processedCount) / elapsed
+                        estimatedSecondsRemaining = Double(totalCount - processedCount) / max(currentRate, 1)
+                    }
                 }
 
                 // Update UI after each batch
@@ -178,10 +220,16 @@ class PhotoManager: ObservableObject {
                 petPhotos = allVisiblePhotos.values.sorted { $0.date > $1.date }
                 updatePhotosByDate(petPhotos)
                 scanProgress = 1.0
-                storyStore.completeScanBatch()
+                let duration = Date().timeIntervalSince(scanStartedAt)
+                storyStore.completeScanBatch(
+                    photosProcessed: processedCount,
+                    duration: duration
+                )
             }
 
             isScanning = false
+            estimatedSecondsRemaining = 0
+            refreshLibrarySummary()
         }
 
         await scanTask?.value
@@ -208,7 +256,8 @@ class PhotoManager: ObservableObject {
             asset: asset,
             date: asset.creationDate ?? Date(),
             confidence: detection.confidence,
-            petType: petType
+            petType: petType,
+            semanticLabels: detection.semanticLabels
         )
     }
 
@@ -360,11 +409,29 @@ class PhotoManager: ObservableObject {
                 asset: asset,
                 date: record.captureDate,
                 confidence: record.detectionConfidence,
-                petType: record.detectedPetType
+                petType: record.detectedPetType,
+                semanticLabels: record.semanticLabels ?? []
             )
         }
         favoriteIDs = Set(records.filter(\.isFavorite).map(\.assetIdentifier))
         updatePhotosByDate(petPhotos)
+    }
+
+
+    private func refreshLibrarySummary() {
+        guard authorizationStatus == .authorized || authorizationStatus == .limited else {
+            libraryPhotoCount = 0
+            remainingPhotoCount = 0
+            return
+        }
+
+        let assets = PHAsset.fetchAssets(with: .image, options: nil)
+        libraryPhotoCount = assets.count
+        let analyzed = storyStore.scanHistory.analyzedPhotoIdentifiers
+        let semanticUpgrades = storyStore.photos
+            .filter { $0.semanticAnalysisVersion != currentSemanticAnalysisVersion }
+            .count
+        remainingPhotoCount = max(0, assets.count - analyzed.count) + semanticUpgrades
     }
 }
 
@@ -375,6 +442,8 @@ private extension PhotoRecord {
             captureDate: photo.date,
             detectedPetType: photo.petType,
             detectionConfidence: photo.confidence,
+            semanticLabels: photo.semanticLabels,
+            semanticAnalysisVersion: 2,
             isFavorite: isFavorite
         )
     }

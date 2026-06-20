@@ -14,6 +14,7 @@ final class StoryStore: ObservableObject {
     @Published private(set) var photos: [PhotoRecord] = []
     @Published private(set) var memories: [MemoryEntry] = []
     @Published private(set) var milestones: [Milestone] = []
+    @Published private(set) var healthCheckIns: [HealthCheckIn] = []
     @Published private(set) var scanHistory = ScanHistory()
     @Published private(set) var persistenceError: String?
 
@@ -72,6 +73,7 @@ final class StoryStore: ObservableObject {
             return updated.petIDs.isEmpty ? nil : updated
         }
         milestones.removeAll { $0.petID == id }
+        healthCheckIns.removeAll { $0.petID == id }
         save()
     }
 
@@ -146,14 +148,33 @@ final class StoryStore: ObservableObject {
         save()
     }
 
+    func upsertHealthCheckIn(_ checkIn: HealthCheckIn) {
+        upsert(checkIn, in: &healthCheckIns)
+        healthCheckIns.sort { $0.date > $1.date }
+        save()
+    }
+
+    func deleteHealthCheckIn(id: UUID) {
+        healthCheckIns.removeAll { $0.id == id }
+        save()
+    }
+
     func markPhotosAnalyzed(_ identifiers: [String]) {
         scanHistory.analyzedPhotoIdentifiers.formUnion(identifiers)
         save()
     }
 
-    func completeScanBatch() {
+    func completeScanBatch(photosProcessed: Int = 0, duration: TimeInterval = 0) {
         scanHistory.lastCompletedAt = Date()
         scanHistory.completedBatchCount += 1
+        if photosProcessed > 0 && duration > 0 {
+            let measuredRate = Double(photosProcessed) / duration
+            if let previousRate = scanHistory.photosPerSecond {
+                scanHistory.photosPerSecond = previousRate * 0.35 + measuredRate * 0.65
+            } else {
+                scanHistory.photosPerSecond = measuredRate
+            }
+        }
         save()
     }
 
@@ -167,6 +188,7 @@ final class StoryStore: ObservableObject {
             photos = stored.photos.sorted { $0.captureDate > $1.captureDate }
             memories = stored.memories.sorted { $0.memoryDate > $1.memoryDate }
             milestones = stored.milestones.sorted { $0.date > $1.date }
+            healthCheckIns = stored.healthCheckIns.sorted { $0.date > $1.date }
             scanHistory = stored.scanHistory
             persistenceError = nil
         } catch {
@@ -180,6 +202,7 @@ final class StoryStore: ObservableObject {
             photos: photos,
             memories: memories,
             milestones: milestones,
+            healthCheckIns: healthCheckIns,
             scanHistory: scanHistory
         )
 

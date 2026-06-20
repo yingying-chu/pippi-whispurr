@@ -6,9 +6,12 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct ContentView: View {
+    @EnvironmentObject private var photoManager: PhotoManager
     @State private var selectedTab: AppTab = .home
+    @State private var showingScanProgress = false
 
     private enum AppTab: Hashable {
         case home
@@ -19,9 +22,7 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeView(
-                openLibrary: { selectedTab = .library }
-            )
+            HomeView()
             .tabItem {
                 Label("Home", systemImage: "house.fill")
             }
@@ -46,117 +47,221 @@ struct ContentView: View {
                 .tabItem {
                     Label("Journal", systemImage: "book.closed.fill")
                 }
-                .tag(AppTab.journal)
+            .tag(AppTab.journal)
+        }
+        .overlay(alignment: .bottom) {
+            if photoManager.isScanning {
+                Button {
+                    showingScanProgress = true
+                } label: {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .tint(.white)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Finding pet moments")
+                                .font(.subheadline.weight(.semibold))
+                            Text("\(photoManager.scannedPhotosCount.formatted()) of \(photoManager.totalPhotosToScan.formatted())")
+                                .font(.caption)
+                                .opacity(0.85)
+                        }
+
+                        Spacer()
+
+                        Text("\(Int(photoManager.scanProgress * 100))%")
+                            .font(.caption.weight(.bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.blue)
+                    .clipShape(Capsule())
+                    .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 52)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .sheet(isPresented: $showingScanProgress) {
+            ScannerView()
         }
     }
 }
 
 // MARK: - Home
 
+private struct HomeJournalSeed: Identifiable {
+    let id = UUID()
+    let title: String
+    let date: Date
+    let petIDs: Set<UUID>
+    let photoIdentifiers: [String]
+}
+
 struct HomeView: View {
     @EnvironmentObject private var storyStore: StoryStore
     @EnvironmentObject private var photoManager: PhotoManager
-    @State private var showingNewPet = false
-    let openLibrary: () -> Void
+    @State private var journalSeed: HomeJournalSeed?
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var showingScanner = false
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    if storyStore.pets.isEmpty {
-                        discoveryWelcome
-                    } else {
-                        storyHome
+                VStack(alignment: .leading, spacing: 32) {
+                    greeting
+                    captureActions
+
+                    if let suggestedSeed {
+                        suggestionCard(suggestedSeed)
+                    } else if let latestMemory = storyStore.memories.first {
+                        recentMemoryCard(latestMemory)
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.top, 28)
+                .padding(.bottom, 40)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(.systemBackground))
             .navigationTitle("PiPi")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showingNewPet) {
+            .sheet(item: $journalSeed, onDismiss: {
+                selectedPhotoItems = []
+            }) { seed in
                 NavigationView {
-                    PetEditorView()
+                    NewJournalEntryView(
+                        title: seed.title,
+                        date: seed.date,
+                        petIDs: seed.petIDs,
+                        photoIdentifiers: seed.photoIdentifiers
+                    )
                 }
+            }
+            .sheet(isPresented: $showingScanner) {
+                ScannerView()
+            }
+            .onChange(of: selectedPhotoItems) { items in
+                let identifiers = items.compactMap(\.itemIdentifier)
+                guard !identifiers.isEmpty else { return }
+                journalSeed = HomeJournalSeed(
+                    title: "",
+                    date: Date(),
+                    petIDs: [],
+                    photoIdentifiers: identifiers
+                )
             }
         }
         .navigationViewStyle(.stack)
     }
 
-    private var discoveryWelcome: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Find the story already in your photos")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("PiPi finds pet moments privately on your phone. You can name and organize each pet whenever you're ready.")
+    private var greeting: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: greetingIcon)
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                Text(greetingText)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
             }
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.blue.opacity(0.1))
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 72))
-                    .foregroundColor(.blue)
-            }
-            .frame(height: 220)
+            Text(homeQuestion)
+                .font(.system(size: 38, weight: .bold, design: .rounded))
 
-            Button(action: openLibrary) {
-                Label("Find My Pet Photos", systemImage: "sparkle.magnifyingglass")
-                    .fontWeight(.semibold)
+            Text(journalPrompt)
+                .font(.title3)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var captureActions: some View {
+        VStack(spacing: 14) {
+            Button {
+                journalSeed = HomeJournalSeed(
+                    title: "",
+                    date: Date(),
+                    petIDs: [],
+                    photoIdentifiers: []
+                )
+            } label: {
+                Label("Add a Pet Moment", systemImage: "square.and.pencil")
+                    .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 8)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
 
-            Button("I want to add a pet first") {
-                showingNewPet = true
-            }
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    private var storyHome: some View {
-        Group {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Every day with them has a story")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("Keep the funny habits, everyday adventures, and little moments that feel like them.")
-                    .foregroundColor(.secondary)
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Your pets")
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                ForEach(storyStore.pets) { pet in
-                    NavigationLink(destination: PetProfileView(petID: pet.id)) {
-                        HomePetCard(pet: pet)
-                    }
-                    .buttonStyle(.plain)
+            HStack(spacing: 12) {
+                PhotosPicker(
+                    selection: $selectedPhotoItems,
+                    maxSelectionCount: 20,
+                    matching: .images
+                ) {
+                    HomeSecondaryAction(
+                        title: "Choose Photos",
+                        systemImage: "photo.on.rectangle.angled"
+                    )
                 }
-            }
 
-            photoLibraryButton
+                Button {
+                    showingScanner = true
+                } label: {
+                    HomeSecondaryAction(
+                        title: "Scan Older Photos",
+                        systemImage: "sparkle.magnifyingglass"
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
-    private var photoLibraryButton: some View {
-        Button(action: openLibrary) {
-            HStack(spacing: 14) {
-                Image(systemName: photoManager.petPhotos.isEmpty ? "photo.badge.plus" : "photo.stack.fill")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+    private var suggestedSeed: HomeJournalSeed? {
+        let usedIDs = Set(storyStore.memories.flatMap(\.photoIdentifiers))
+        let unused = photoManager.petPhotos.filter { !usedIDs.contains($0.id) }
+        let groups = Dictionary(grouping: unused) {
+            Calendar.current.startOfDay(for: $0.date)
+        }
+        guard let group = groups
+            .filter({ $0.value.count >= 2 })
+            .max(by: { $0.key < $1.key }) else {
+            return nil
+        }
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(photoManager.petPhotos.isEmpty ? "Find pet photos" : "Open photo library")
+        let photoIDs = group.value.map(\.id)
+        let petIDs = Set(
+            storyStore.photos
+                .filter { photoIDs.contains($0.assetIdentifier) }
+                .flatMap(\.assignedPetIDs)
+        )
+        return HomeJournalSeed(
+            title: "A day worth remembering",
+            date: group.key,
+            petIDs: petIDs,
+            photoIdentifiers: photoIDs
+        )
+    }
+
+    private func suggestionCard(_ seed: HomeJournalSeed) -> some View {
+        Button {
+            journalSeed = seed
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "sparkles")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                    .frame(width: 44, height: 44)
+                    .background(Color.orange.opacity(0.12))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("A moment worth writing")
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text(photoLibrarySubtitle)
+                    Text("\(seed.photoIdentifiers.count) photos from \(seed.date.formatted(date: .abbreviated, time: .omitted))")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -167,59 +272,103 @@ struct HomeView: View {
                     .foregroundColor(.secondary)
             }
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
-            .cornerRadius(16)
+            .background(Color.yellow.opacity(0.12))
+            .cornerRadius(18)
         }
         .buttonStyle(.plain)
     }
 
-    private var photoLibrarySubtitle: String {
-        if photoManager.petPhotos.isEmpty {
-            return "Scan when you're ready—your journal comes first."
+    private func recentMemoryCard(_ memory: MemoryEntry) -> some View {
+        NavigationLink(destination: JournalDetailView(memoryID: memory.id)) {
+            HStack {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Your latest memory")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(memory.title.isEmpty ? "A moment from today" : memory.title)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Text(memory.memoryDate.formatted(date: .abbreviated, time: .omitted))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(18)
         }
-        return "\(photoManager.petPhotos.count) pet photos ready to organize"
+        .buttonStyle(.plain)
+    }
+
+    private var journalPrompt: String {
+        "A photo and one small detail are enough."
+    }
+
+    private var petSubject: String {
+        if storyStore.pets.count == 1, let pet = storyStore.pets.first {
+            return pet.name
+        }
+        return "your pets"
+    }
+
+    private var homeQuestion: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<5:
+            return "Still awake with \(petSubject)?"
+        case 5..<10:
+            return "What's on the morning agenda with \(petSubject)?"
+        case 10..<13:
+            return "Have you and \(petSubject) eaten yet?"
+        case 13..<17:
+            return "What have you and \(petSubject) been up to today?"
+        case 17..<21:
+            return "How has today felt with \(petSubject)?"
+        default:
+            return "Anything from today you want to keep?"
+        }
+    }
+
+    private var greetingText: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<11: return "Good morning"
+        case 11..<14: return "It's lunchtime"
+        case 14..<18: return "Good afternoon"
+        case 18..<22: return "Good evening"
+        default: return "Good night"
+        }
+    }
+
+    private var greetingIcon: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        return hour >= 18 || hour < 6 ? "moon.stars.fill" : "sun.max.fill"
     }
 }
 
-private struct HomePetCard: View {
-    let pet: PetProfile
+private struct HomeSecondaryAction: View {
+    let title: String
+    let systemImage: String
 
     var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.12))
-                Text(speciesEmoji)
-                    .font(.title)
-            }
-            .frame(width: 64, height: 64)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(pet.name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                Text(pet.introduction.isEmpty ? "Start building \(pet.name)'s story" : pet.introduction)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
-
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
+        VStack(spacing: 9) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundColor(.blue)
+            Text(title)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.center)
         }
-        .padding()
-        .background(Color(.systemBackground))
+        .frame(maxWidth: .infinity)
+        .frame(height: 96)
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(18)
-    }
-
-    private var speciesEmoji: String {
-        switch pet.species.lowercased() {
-        case "dog": return "🐕"
-        case "cat": return "🐈"
-        default: return "🐾"
-        }
     }
 }
 

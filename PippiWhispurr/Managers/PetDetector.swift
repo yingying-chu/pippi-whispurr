@@ -13,47 +13,17 @@ class PetDetector {
     struct DetectionResult {
         let petType: PetPhoto.PetType?
         let confidence: Float
+        let semanticLabels: [String]
     }
 
     func detectPet(in image: UIImage) async -> DetectionResult {
         guard let cgImage = image.cgImage else {
-            return DetectionResult(petType: nil, confidence: 0.0)
+            return DetectionResult(petType: nil, confidence: 0.0, semanticLabels: [])
         }
 
-        return await withCheckedContinuation { continuation in
-            let request = VNRecognizeAnimalsRequest { request, error in
-                guard error == nil,
-                      let results = request.results as? [VNRecognizedObjectObservation] else {
-                    continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
-                    return
-                }
-
-                // VNRecognizeAnimalsRequest can detect cats and dogs
-                let bestLabel = results
-                    .flatMap(\.labels)
-                    .max { $0.confidence < $1.confidence }
-
-                guard let label = bestLabel else {
-                    continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
-                    return
-                }
-
-                let petType: PetPhoto.PetType
-                switch label.identifier.lowercased() {
-                case "dog":
-                    petType = .dog
-                case "cat":
-                    petType = .cat
-                default:
-                    petType = .other
-                }
-
-                continuation.resume(returning: DetectionResult(
-                    petType: petType,
-                    confidence: label.confidence
-                ))
-            }
-
+        return await Task.detached(priority: .utility) {
+            let animalRequest = VNRecognizeAnimalsRequest()
+            let classificationRequest = VNClassifyImageRequest()
             let handler = VNImageRequestHandler(
                 cgImage: cgImage,
                 orientation: image.imageOrientation.cgImageOrientation,
@@ -61,11 +31,35 @@ class PetDetector {
             )
 
             do {
-                try handler.perform([request])
+                try handler.perform([animalRequest, classificationRequest])
             } catch {
-                continuation.resume(returning: DetectionResult(petType: nil, confidence: 0.0))
+                return DetectionResult(petType: nil, confidence: 0.0, semanticLabels: [])
             }
-        }
+
+            let bestLabel = animalRequest.results?
+                .flatMap(\.labels)
+                .max { $0.confidence < $1.confidence }
+
+            let petType: PetPhoto.PetType?
+            switch bestLabel?.identifier.lowercased() {
+            case "dog": petType = .dog
+            case "cat": petType = .cat
+            case .some(_): petType = .other
+            case .none: petType = nil
+            }
+
+            let semanticLabels = (classificationRequest.results ?? [])
+                .filter { $0.confidence >= 0.08 }
+                .sorted { $0.confidence > $1.confidence }
+                .prefix(10)
+                .map { $0.identifier.lowercased() }
+
+            return DetectionResult(
+                petType: petType,
+                confidence: bestLabel?.confidence ?? 0,
+                semanticLabels: semanticLabels
+            )
+        }.value
     }
 }
 
