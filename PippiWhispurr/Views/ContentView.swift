@@ -229,6 +229,7 @@ struct LibraryView: View {
     private enum BrowseMode: String, CaseIterable {
         case photos = "Photos"
         case calendar = "Calendar"
+        case map = "Map"
     }
 
     @EnvironmentObject private var photoManager: PhotoManager
@@ -258,7 +259,7 @@ struct LibraryView: View {
 
                         if browseMode == .photos {
                             RecentPhotosView()
-                        } else {
+                        } else if browseMode == .calendar {
                             CalendarView(selectedDate: $selectedDate)
                             Divider()
                             if let selectedDate {
@@ -275,6 +276,8 @@ struct LibraryView: View {
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                             }
+                        } else {
+                            PhotoMapBrowserView(photos: photoManager.filteredPetPhotos)
                         }
                     }
                 }
@@ -293,50 +296,6 @@ struct LibraryView: View {
             .sheet(isPresented: $showingScanner) {
                 ScannerView()
             }
-        }
-        .navigationViewStyle(.stack)
-    }
-}
-
-// MARK: - Journal
-
-struct JournalView: View {
-    @EnvironmentObject private var storyStore: StoryStore
-
-    var body: some View {
-        NavigationView {
-            Group {
-                if storyStore.memories.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "book.closed")
-                            .font(.system(size: 58))
-                            .foregroundColor(.secondary)
-                        Text("Your journal starts here")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        Text("Soon you'll be able to turn photos and small observations into lasting memories.")
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                    }
-                } else {
-                    List(storyStore.memories) { memory in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(memory.title.isEmpty ? "A memory" : memory.title)
-                                .font(.headline)
-                            Text(memory.body)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                            Text(memory.memoryDate.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-            .navigationTitle("Journal")
         }
         .navigationViewStyle(.stack)
     }

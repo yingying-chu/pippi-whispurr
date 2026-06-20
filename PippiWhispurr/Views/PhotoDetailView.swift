@@ -10,8 +10,11 @@ import Photos
 
 struct PhotoDetailView: View {
     @EnvironmentObject var photoManager: PhotoManager
+    @EnvironmentObject private var storyStore: StoryStore
     let photo: PetPhoto
     @State private var image: UIImage?
+    @State private var showingPetAssignment = false
+    @State private var showingLocationMap = false
     @Environment(\.dismiss) var dismiss
 
     private var isFavorite: Bool { photoManager.isFavorite(photo) }
@@ -69,14 +72,24 @@ struct PhotoDetailView: View {
                         }
                     }
 
-                    if photo.asset.location != nil {
-                        HStack {
-                            Image(systemName: "location.fill")
-                                .foregroundColor(.white.opacity(0.6))
-                            Text("Location available")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.8))
+                    if let coordinate = photo.asset.location?.coordinate {
+                        PhotoLocationCard(coordinate: coordinate) {
+                            showingLocationMap = true
                         }
+                    }
+
+                    Button {
+                        showingPetAssignment = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "pawprint.fill")
+                            Text(assignedPetsText)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 6)
                     }
                 }
                 .padding()
@@ -95,6 +108,28 @@ struct PhotoDetailView: View {
         .task {
             image = await photoManager.loadFullImage(for: photo.asset)
         }
+        .sheet(isPresented: $showingPetAssignment) {
+            PhotoAssignmentView(
+                photo: photo,
+                assignedPetIDs: assignedPetIDs
+            )
+        }
+        .sheet(isPresented: $showingLocationMap) {
+            PhotoLocationFullMap(photo: photo)
+        }
+    }
+
+    private var assignedPetIDs: Set<UUID> {
+        storyStore.photos
+            .first { $0.assetIdentifier == photo.id }?
+            .assignedPetIDs ?? []
+    }
+
+    private var assignedPetsText: String {
+        let names = storyStore.pets
+            .filter { assignedPetIDs.contains($0.id) }
+            .map(\.name)
+        return names.isEmpty ? "Assign to a pet" : names.joined(separator: ", ")
     }
 
     private var formattedDate: String {

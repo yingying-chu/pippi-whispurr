@@ -20,6 +20,9 @@
 		2A000001000000000000000B /* StoryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000C /* StoryModels.swift */; };
 		2A000001000000000000000C /* StoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000D /* StoryStore.swift */; };
 		2A000001000000000000000D /* PetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000E /* PetViews.swift */; };
+		2A000001000000000000000E /* PhotoAssignmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000000F /* PhotoAssignmentView.swift */; };
+		2A000001000000000000000F /* PhotoMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000010 /* PhotoMapView.swift */; };
+		2A0000010000000000000010 /* JournalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000011 /* JournalViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +41,9 @@
 		2B000001000000000000000C /* StoryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryModels.swift; sourceTree = "<group>"; };
 		2B000001000000000000000D /* StoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryStore.swift; sourceTree = "<group>"; };
 		2B000001000000000000000E /* PetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetViews.swift; sourceTree = "<group>"; };
+		2B000001000000000000000F /* PhotoAssignmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAssignmentView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000010 /* PhotoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMapView.swift; sourceTree = "<group>"; };
+		2B0000010000000000000011 /* JournalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +95,9 @@
 				2B0000010000000000000006 /* PhotoDetailView.swift */,
 				2B0000010000000000000007 /* ScannerView.swift */,
 				2B000001000000000000000E /* PetViews.swift */,
+				2B000001000000000000000F /* PhotoAssignmentView.swift */,
+				2B0000010000000000000010 /* PhotoMapView.swift */,
+				2B0000010000000000000011 /* JournalViews.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -193,6 +202,9 @@
 				2A000001000000000000000B /* StoryModels.swift in Sources */,
 				2A000001000000000000000C /* StoryStore.swift in Sources */,
 				2A000001000000000000000D /* PetViews.swift in Sources */,
+				2A000001000000000000000E /* PhotoAssignmentView.swift in Sources */,
+				2A000001000000000000000F /* PhotoMapView.swift in Sources */,
+				2A0000010000000000000010 /* JournalViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

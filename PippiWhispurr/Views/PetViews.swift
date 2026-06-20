@@ -137,11 +137,21 @@ private struct PetRow: View {
 
 struct PetProfileView: View {
     @EnvironmentObject private var storyStore: StoryStore
+    @EnvironmentObject private var photoManager: PhotoManager
     let petID: UUID
     @State private var showingEditor = false
 
     private var pet: PetProfile? {
         storyStore.pets.first { $0.id == petID }
+    }
+
+    private var assignedPhotos: [PetPhoto] {
+        let assignedIDs = Set(
+            storyStore.photos
+                .filter { $0.assignedPetIDs.contains(petID) }
+                .map(\.assetIdentifier)
+        )
+        return photoManager.petPhotos.filter { assignedIDs.contains($0.id) }
     }
 
     var body: some View {
@@ -204,18 +214,42 @@ struct PetProfileView: View {
                         .background(Color(.secondarySystemGroupedBackground))
                         .cornerRadius(14)
 
-                        VStack(spacing: 8) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.title)
-                                .foregroundColor(.secondary)
-                            Text("The timeline comes next")
-                                .font(.headline)
-                            Text("Photos, memories, and milestones will gather here.")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
+                        if assignedPhotos.isEmpty {
+                            VStack(spacing: 8) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.title)
+                                    .foregroundColor(.secondary)
+                                Text("No photos assigned yet")
+                                    .font(.headline)
+                                Text("Open a photo in Library and choose Assign to a pet.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 28)
+                        } else {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("Photos")
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                    Spacer()
+                                    Text("\(assignedPhotos.count)")
+                                        .foregroundColor(.secondary)
+                                }
+
+                                LazyVGrid(
+                                    columns: Array(repeating: GridItem(.flexible()), count: 3),
+                                    spacing: 8
+                                ) {
+                                    ForEach(assignedPhotos) { photo in
+                                        NavigationLink(destination: PhotoDetailView(photo: photo)) {
+                                            PhotoThumbnailView(photo: photo)
+                                        }
+                                    }
+                                }
+                            }
                         }
-                        .padding(.vertical, 28)
                     }
                     .padding()
                 }

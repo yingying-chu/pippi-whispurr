@@ -61,6 +61,7 @@ struct PhotoGridView: View {
 
 struct PhotoThumbnailView: View {
     @EnvironmentObject var photoManager: PhotoManager
+    @EnvironmentObject private var storyStore: StoryStore
     let photo: PetPhoto
     @State private var image: UIImage?
 
@@ -92,6 +93,15 @@ struct PhotoThumbnailView: View {
                             .cornerRadius(6)
                     }
 
+                    if isAssigned {
+                        Image(systemName: "pawprint.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(6)
+                            .background(Color.white.opacity(0.9))
+                            .cornerRadius(6)
+                    }
+
                     Text(photo.petType.emoji)
                         .font(.caption)
                         .padding(6)
@@ -105,6 +115,13 @@ struct PhotoThumbnailView: View {
         .task {
             await loadThumbnail()
         }
+    }
+
+    private var isAssigned: Bool {
+        guard let record = storyStore.photos.first(where: { $0.assetIdentifier == photo.id }) else {
+            return false
+        }
+        return !record.assignedPetIDs.isEmpty
     }
 
     private func loadThumbnail() async {

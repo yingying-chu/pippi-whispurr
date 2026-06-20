@@ -111,6 +111,26 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
 }
 
 struct MemoryEntry: Identifiable, Codable, Hashable {
+    enum Kind: String, Codable, CaseIterable {
+        case everyday
+        case birthday
+        case adoption
+        case adventure
+        case firstTime
+        case health
+        case custom
+    }
+
+    enum Feeling: String, Codable, CaseIterable {
+        case happy
+        case grateful
+        case playful
+        case proud
+        case calm
+        case worried
+        case tender
+    }
+
     let id: UUID
     var title: String
     var body: String
@@ -118,6 +138,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
     var petIDs: Set<UUID>
     var photoIdentifiers: [String]
     var locationName: String?
+    var kind: Kind?
+    var feeling: Feeling?
     let createdAt: Date
     var updatedAt: Date
 
@@ -129,6 +151,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
         petIDs: Set<UUID>,
         photoIdentifiers: [String] = [],
         locationName: String? = nil,
+        kind: Kind? = .everyday,
+        feeling: Feeling? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -139,6 +163,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
         self.petIDs = petIDs
         self.photoIdentifiers = photoIdentifiers
         self.locationName = locationName
+        self.kind = kind
+        self.feeling = feeling
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
