@@ -17,6 +17,7 @@ final class StoryStore: ObservableObject {
     @Published private(set) var healthCheckIns: [HealthCheckIn] = []
     @Published private(set) var scanHistory = ScanHistory()
     @Published private(set) var persistenceError: String?
+    @Published private(set) var isLoaded = false
 
     private let fileURL: URL
     private let fileManager: FileManager
@@ -52,7 +53,13 @@ final class StoryStore: ObservableObject {
             persistenceError = "Could not prepare local storage: \(error.localizedDescription)"
         }
 
-        load()
+        if fileManager.fileExists(atPath: fileURL.path) {
+            Task {
+                await loadAsync()
+            }
+        } else {
+            isLoaded = true
+        }
     }
 
     func upsertPet(_ pet: PetProfile) {
@@ -126,6 +133,23 @@ final class StoryStore: ObservableObject {
         save()
     }
 
+    func setDetectedPetType(photoID: String, petType: PetPhoto.PetType) {
+        guard let index = photos.firstIndex(where: { $0.id == photoID }) else { return }
+        photos[index].detectedPetType = petType
+        photos[index].updatedAt = Date()
+        save()
+    }
+
+    func removePhoto(id: String) {
+        photos.removeAll { $0.id == id }
+        memories = memories.map { memory in
+            var updated = memory
+            updated.photoIdentifiers.removeAll { $0 == id }
+            return updated
+        }
+        save()
+    }
+
     func upsertMemory(_ memory: MemoryEntry) {
         upsert(memory, in: &memories)
         memories.sort { $0.memoryDate > $1.memoryDate }
@@ -178,22 +202,31 @@ final class StoryStore: ObservableObject {
         save()
     }
 
-    private func load() {
-        guard fileManager.fileExists(atPath: fileURL.path) else { return }
+    private func loadAsync() async {
+        let url = fileURL
+        let result = await Task.detached(priority: .userInitiated) { () -> (StoryData?, String?) in
+            do {
+                let data = try Data(contentsOf: url)
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                return (try decoder.decode(StoryData.self, from: data), nil)
+            } catch {
+                return (nil, error.localizedDescription)
+            }
+        }.value
 
-        do {
-            let data = try Data(contentsOf: fileURL)
-            let stored = try decoder.decode(StoryData.self, from: data)
+        if let stored = result.0 {
+            scanHistory = stored.scanHistory
             pets = stored.pets
             photos = stored.photos.sorted { $0.captureDate > $1.captureDate }
             memories = stored.memories.sorted { $0.memoryDate > $1.memoryDate }
             milestones = stored.milestones.sorted { $0.date > $1.date }
             healthCheckIns = stored.healthCheckIns.sorted { $0.date > $1.date }
-            scanHistory = stored.scanHistory
             persistenceError = nil
-        } catch {
-            persistenceError = "Could not load saved stories: \(error.localizedDescription)"
+        } else if let errorMessage = result.1 {
+            persistenceError = "Could not load saved stories: \(errorMessage)"
         }
+        isLoaded = true
     }
 
     private func save() {

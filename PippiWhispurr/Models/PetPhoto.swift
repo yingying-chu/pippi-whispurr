@@ -14,7 +14,7 @@ struct PetPhoto: Identifiable, Hashable {
     let asset: PHAsset
     let date: Date
     let confidence: Float
-    let petType: PetType
+    var petType: PetType
     var semanticLabels: [String] = []
 
     enum PetType: String, CaseIterable, Codable {

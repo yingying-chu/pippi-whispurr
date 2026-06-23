@@ -22,9 +22,22 @@ struct PippiWhispurrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(photoManager)
-                .environmentObject(storyStore)
+            Group {
+                if storyStore.isLoaded {
+                    ContentView()
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 44))
+                            .foregroundColor(.orange)
+                        Text("PiPi")
+                            .font(.largeTitle.bold())
+                        ProgressView()
+                    }
+                }
+            }
+            .environmentObject(photoManager)
+            .environmentObject(storyStore)
         }
     }
 }

@@ -42,7 +42,7 @@ struct PhotoGridView: View {
 
                 LazyVGrid(columns: columns, spacing: 8) {
                     ForEach(photos) { photo in
-                        NavigationLink(destination: PhotoDetailView(photo: photo)) {
+                        NavigationLink(destination: PhotoDetailView(photo: photo, photos: photos)) {
                             PhotoThumbnailView(photo: photo)
                         }
                     }
@@ -102,11 +102,6 @@ struct PhotoThumbnailView: View {
                             .cornerRadius(6)
                     }
 
-                    Text(photo.petType.emoji)
-                        .font(.caption)
-                        .padding(6)
-                        .background(Color.white.opacity(0.9))
-                        .cornerRadius(6)
                 }
                 .padding(6)
             }

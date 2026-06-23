@@ -54,13 +54,13 @@ struct JournalView: View {
                     .map(\.name)
                 let milestone = milestoneDetails(for: date, petIDs: petIDs)
                 let semantic = semanticSuggestion(for: photos, petNames: petNames)
-                guard milestone != nil || semantic != nil else { return nil }
                 let coordinate = representativeCoordinate(for: photos)
+                let factualTitle = "\(date.formatted(.dateTime.month(.wide).day())) · \(photos.count) photos"
 
                 return JournalSuggestion(
                     id: "event-\(date.timeIntervalSince1970)-\(photoIDs.first ?? "")",
-                    title: milestone?.title ?? semantic?.title ?? "",
-                    prompt: milestone?.prompt ?? semantic?.prompt ?? "",
+                    title: milestone?.title ?? semantic?.title ?? factualTitle,
+                    prompt: milestone?.prompt ?? semantic?.prompt ?? "Add the story behind this photo set.",
                     date: date,
                     photoIdentifiers: photoIDs,
                     petIDs: petIDs,
@@ -84,17 +84,21 @@ struct JournalView: View {
                                 .font(.title2)
                                 .fontWeight(.bold)
 
-                            ForEach(suggestions) { suggestion in
-                                Button {
-                                    editorRequest = JournalEditorRequest(
-                                        suggestion: resolvedSuggestion(suggestion)
-                                    )
-                                } label: {
-                                    JournalSuggestionCard(
-                                        suggestion: resolvedSuggestion(suggestion)
-                                    )
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(suggestions) { suggestion in
+                                        Button {
+                                            editorRequest = JournalEditorRequest(
+                                                suggestion: resolvedSuggestion(suggestion)
+                                            )
+                                        } label: {
+                                            JournalSuggestionCard(
+                                                suggestion: resolvedSuggestion(suggestion)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -236,14 +240,28 @@ struct JournalView: View {
         for photos: [PetPhoto],
         petNames: [String]
     ) -> (title: String, prompt: String, kind: MemoryEntry.Kind)? {
-        let labels = photos
-            .flatMap(\.semanticLabels)
-            .joined(separator: " ")
-            .lowercased()
+        let labels = photos.flatMap(\.semanticLabels).map { $0.lowercased() }
+        let tokens = Set(labels.flatMap {
+            $0.components(separatedBy: CharacterSet.alphanumerics.inverted)
+                .filter { !$0.isEmpty }
+        })
         let name = petNames.isEmpty ? nil : petNames.joined(separator: " & ")
 
         func containsAny(_ words: [String]) -> Bool {
-            words.contains { labels.contains($0) }
+            words.contains { word in
+                if word.contains(" ") || word.contains("-") {
+                    return labels.contains { $0 == word }
+                }
+                return tokens.contains(word)
+            }
+        }
+
+        if containsAny(["belly", "abdomen", "supine", "upside-down", "rolling"]) {
+            return (
+                name.map { "\($0), belly up and completely relaxed" } ?? "Belly up and completely relaxed",
+                "What made this upside-down moment so perfectly them?",
+                .everyday
+            )
         }
 
         if containsAny(["sleep", "nap", "bed", "bedding", "blanket", "pillow", "lying", "reclining", "resting"]) {
@@ -260,7 +278,7 @@ struct JournalView: View {
                 .everyday
             )
         }
-        if containsAny(["toy", "playing", "play", "ball", "plush", "stuffed", "recreation"]) {
+        if containsAny(["toy", "ball", "plush", "stuffed"]) {
             return (
                 name.map { "\($0) in play mode" } ?? "Play mode: on",
                 "What game were they playing, and what happened next?",
@@ -363,35 +381,37 @@ private struct JournalSuggestionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            JournalPhotoCollage(identifiers: suggestion.photoIdentifiers)
+            if let firstIdentifier = suggestion.photoIdentifiers.first {
+                ZStack(alignment: .bottomTrailing) {
+                    AssetThumbnailView(identifier: firstIdentifier)
+                        .frame(height: 150)
 
-            if let locationName = suggestion.locationName {
-                Label(locationName, systemImage: "location.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 9)
-                    .background(Color.green.opacity(0.12))
+                    if suggestion.photoIdentifiers.count > 1 {
+                        Text("+\(suggestion.photoIdentifiers.count - 1)")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Capsule())
+                            .padding(8)
+                    }
+                }
             }
 
             Text(suggestion.title)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .font(.headline)
+                .lineLimit(2)
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
             Text(suggestion.date.formatted(date: .long, time: .omitted))
                 .font(.caption)
                 .foregroundColor(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.top, 5)
-            Text(suggestion.prompt)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 16)
+                .padding(.horizontal, 12)
+                .padding(.top, 4)
+                .padding(.bottom, 12)
         }
+        .frame(width: 250)
         .background(Color(.systemBackground))
         .cornerRadius(18)
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
@@ -618,13 +638,9 @@ struct JournalEditorView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    TextField("Give this moment a name (optional)", text: $title)
+                    TextField("Name this moment (optional)", text: $title)
                         .font(.title2.bold())
                         .focused($focusedField, equals: .title)
-
-                    Text(writingPrompt)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
 
                     TextEditor(text: $bodyText)
                         .focused($focusedField, equals: .story)
@@ -635,7 +651,7 @@ struct JournalEditorView: View {
                         .cornerRadius(14)
                         .overlay(alignment: .topLeading) {
                             if bodyText.isEmpty && focusedField != .story {
-                                Text("Add one little thing you want to remember…")
+                                Text(writingPrompt)
                                     .foregroundColor(Color(.placeholderText))
                                     .padding(.horizontal, 15)
                                     .padding(.vertical, 18)
@@ -725,6 +741,7 @@ struct JournalEditorView: View {
                     initialSelection: Set(photoIdentifiers)
                 ) { identifiers in
                     photoIdentifiers = identifiers
+                    includeAssignedPets(for: identifiers)
                 }
             }
         }
@@ -733,6 +750,7 @@ struct JournalEditorView: View {
             for identifier in newIdentifiers where !photoIdentifiers.contains(identifier) {
                 photoIdentifiers.append(identifier)
             }
+            includeAssignedPets(for: newIdentifiers)
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -773,6 +791,15 @@ struct JournalEditorView: View {
         } else {
             petIDs.insert(petID)
         }
+    }
+
+    private func includeAssignedPets(for photoIDs: [String]) {
+        let assigned = Set(
+            storyStore.photos
+                .filter { photoIDs.contains($0.assetIdentifier) }
+                .flatMap(\.assignedPetIDs)
+        )
+        petIDs.formUnion(assigned)
     }
 
     private func save() {

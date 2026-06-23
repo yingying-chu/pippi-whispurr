@@ -12,8 +12,14 @@ import Combine
 
 @MainActor
 class PhotoManager: ObservableObject {
+    private enum AssetAnalysisResult {
+        case analyzed(PetPhoto?)
+        case unavailable
+    }
+
     @Published var petPhotos: [PetPhoto] = []
     @Published var isScanning = false
+    @Published var isScanPaused = false
     @Published var scanProgress: Double = 0.0
     @Published var authorizationStatus: PHAuthorizationStatus = .notDetermined
     @Published var photosByDate: [Date: [PetPhoto]] = [:]
@@ -33,6 +39,7 @@ class PhotoManager: ObservableObject {
     private let storyStore: StoryStore
     private var cancellables = Set<AnyCancellable>()
     private var scanTask: Task<Void, Never>?
+    private var restoreTask: Task<Void, Never>?
 
     private let batchSize = 20
     private let currentSemanticAnalysisVersion = 2
@@ -71,8 +78,20 @@ class PhotoManager: ObservableObject {
         )
         favoriteIDs = persistedFavorites.union(legacyFavorites)
 
+        storyStore.$photos
+            .dropFirst()
+            .sink { [weak self] records in
+                guard let self else { return }
+                self.favoriteIDs = Set(records.filter(\.isFavorite).map(\.assetIdentifier))
+                if self.authorizationStatus == .authorized || self.authorizationStatus == .limited {
+                    self.schedulePersistedPhotoRestore()
+                    self.refreshLibrarySummary()
+                }
+            }
+            .store(in: &cancellables)
+
         if authorizationStatus == .authorized || authorizationStatus == .limited {
-            restorePersistedPhotos()
+            schedulePersistedPhotoRestore()
             refreshLibrarySummary()
         }
     }
@@ -85,7 +104,7 @@ class PhotoManager: ObservableObject {
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         authorizationStatus = status
         if status == .authorized || status == .limited {
-            restorePersistedPhotos()
+            schedulePersistedPhotoRestore()
             refreshLibrarySummary()
         }
     }
@@ -117,6 +136,7 @@ class PhotoManager: ObservableObject {
 
         scanTask = Task {
             let scanStartedAt = Date()
+            isScanPaused = false
             isScanning = true
             scanProgress = 0.0
             scannedPhotosCount = 0
@@ -155,6 +175,7 @@ class PhotoManager: ObservableObject {
             guard totalCount > 0 else {
                 lastBatchHadNoPhotos = true
                 scanProgress = 1.0
+                isScanPaused = false
                 isScanning = false
                 return
             }
@@ -179,11 +200,18 @@ class PhotoManager: ObservableObject {
 
                     let asset = photosForThisBatch[index]
 
-                    if let result = await analyzeAsset(asset) {
-                        detectedPhotos.append(result)
-                        allVisiblePhotos[result.id] = result
+                    switch await analyzeAsset(asset) {
+                    case .analyzed(let result):
+                        analyzedIdentifiers.append(asset.localIdentifier)
+                        if let result {
+                            detectedPhotos.append(result)
+                            allVisiblePhotos[result.id] = result
+                        }
+                    case .unavailable:
+                        // Keep this asset eligible for a later scan. This is common
+                        // when an iCloud photo cannot be downloaded right now.
+                        break
                     }
-                    analyzedIdentifiers.append(asset.localIdentifier)
 
                     processedCount += 1
                     scannedPhotosCount = processedCount
@@ -225,6 +253,7 @@ class PhotoManager: ObservableObject {
                     photosProcessed: processedCount,
                     duration: duration
                 )
+                isScanPaused = false
             }
 
             isScanning = false
@@ -235,30 +264,31 @@ class PhotoManager: ObservableObject {
         await scanTask?.value
     }
 
-    func cancelScan() {
+    func pauseScan() {
+        guard isScanning else { return }
+        isScanPaused = true
         scanTask?.cancel()
-        isScanning = false
     }
 
-    private func analyzeAsset(_ asset: PHAsset) async -> PetPhoto? {
+    private func analyzeAsset(_ asset: PHAsset) async -> AssetAnalysisResult {
         guard let image = await loadImage(for: asset) else {
-            return nil
+            return .unavailable
         }
 
         let detection = await petDetector.detectPet(in: image)
 
         guard let petType = detection.petType, detection.confidence > 0.6 else {
-            return nil
+            return .analyzed(nil)
         }
 
-        return PetPhoto(
+        return .analyzed(PetPhoto(
             id: asset.localIdentifier,
             asset: asset,
             date: asset.creationDate ?? Date(),
             confidence: detection.confidence,
             petType: petType,
             semanticLabels: detection.semanticLabels
-        )
+        ))
     }
 
     private func loadImage(for asset: PHAsset) async -> UIImage? {
@@ -275,12 +305,14 @@ class PhotoManager: ObservableObject {
                 targetSize: CGSize(width: 512, height: 512),
                 contentMode: .aspectFit,
                 options: options
-            ) { image, _ in
-                // Only resume once - PHImageManager can call this multiple times
-                if !hasResumed {
-                    hasResumed = true
-                    continuation.resume(returning: image)
-                }
+            ) { image, info in
+                guard !hasResumed else { return }
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                let hasError = info?[PHImageErrorKey] != nil
+                guard !isDegraded || isCancelled || hasError else { return }
+                hasResumed = true
+                continuation.resume(returning: image)
             }
         }
     }
@@ -297,12 +329,14 @@ class PhotoManager: ObservableObject {
                 targetSize: PHImageManagerMaximumSize,
                 contentMode: .aspectFit,
                 options: options
-            ) { image, _ in
-                // Only resume once - PHImageManager can call this multiple times
-                if !hasResumed {
-                    hasResumed = true
-                    continuation.resume(returning: image)
-                }
+            ) { image, info in
+                guard !hasResumed else { return }
+                let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+                let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+                let hasError = info?[PHImageErrorKey] != nil
+                guard !isDegraded || isCancelled || hasError else { return }
+                hasResumed = true
+                continuation.resume(returning: image)
             }
         }
     }
@@ -375,6 +409,28 @@ class PhotoManager: ObservableObject {
         favoriteIDs.contains(photo.id)
     }
 
+    func correctPetType(_ photo: PetPhoto, to petType: PetPhoto.PetType) {
+        guard let index = petPhotos.firstIndex(where: { $0.id == photo.id }) else { return }
+        petPhotos[index].petType = petType
+        storyStore.setDetectedPetType(photoID: photo.id, petType: petType)
+        updatePhotosByDate(petPhotos)
+    }
+
+    func removeFromPiPi(_ photo: PetPhoto) {
+        petPhotos.removeAll { $0.id == photo.id }
+        favoriteIDs.remove(photo.id)
+        storyStore.removePhoto(id: photo.id)
+        updatePhotosByDate(petPhotos)
+        refreshLibrarySummary()
+    }
+
+    func deleteFromPhotoLibrary(_ photo: PetPhoto) async throws {
+        try await PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.deleteAssets([photo.asset] as NSArray)
+        }
+        removeFromPiPi(photo)
+    }
+
     var favoritePhotos: [PetPhoto] {
         petPhotos.filter { favoriteIDs.contains($0.id) }
     }
@@ -389,32 +445,41 @@ class PhotoManager: ObservableObject {
         return petPhotos
     }
 
-    private func restorePersistedPhotos() {
+    private func schedulePersistedPhotoRestore() {
         let records = storyStore.photos
         guard !records.isEmpty else { return }
 
-        let assets = PHAsset.fetchAssets(
-            withLocalIdentifiers: records.map(\.assetIdentifier),
-            options: nil
-        )
-        var assetsByID: [String: PHAsset] = [:]
-        assets.enumerateObjects { asset, _, _ in
-            assetsByID[asset.localIdentifier] = asset
-        }
+        restoreTask?.cancel()
+        restoreTask = Task {
+            let restoredPhotos: [PetPhoto] = await Task.detached(priority: .userInitiated) { () -> [PetPhoto] in
+                let assets = PHAsset.fetchAssets(
+                    withLocalIdentifiers: records.map(\.assetIdentifier),
+                    options: nil
+                )
+                var assetsByID: [String: PHAsset] = [:]
+                assets.enumerateObjects { asset, _, _ in
+                    assetsByID[asset.localIdentifier] = asset
+                }
 
-        petPhotos = records.compactMap { record in
-            guard let asset = assetsByID[record.assetIdentifier] else { return nil }
-            return PetPhoto(
-                id: record.assetIdentifier,
-                asset: asset,
-                date: record.captureDate,
-                confidence: record.detectionConfidence,
-                petType: record.detectedPetType,
-                semanticLabels: record.semanticLabels ?? []
-            )
+                let restored: [PetPhoto] = records.compactMap { record in
+                    guard let asset = assetsByID[record.assetIdentifier] else { return nil }
+                    return PetPhoto(
+                        id: record.assetIdentifier,
+                        asset: asset,
+                        date: record.captureDate,
+                        confidence: record.detectionConfidence,
+                        petType: record.detectedPetType,
+                        semanticLabels: record.semanticLabels ?? []
+                    )
+                }
+                return restored
+            }.value
+
+            guard !Task.isCancelled else { return }
+            petPhotos = restoredPhotos
+            favoriteIDs = Set(records.filter(\.isFavorite).map(\.assetIdentifier))
+            updatePhotosByDate(restoredPhotos)
         }
-        favoriteIDs = Set(records.filter(\.isFavorite).map(\.assetIdentifier))
-        updatePhotosByDate(petPhotos)
     }
 
 

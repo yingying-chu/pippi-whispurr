@@ -50,16 +50,20 @@ struct ContentView: View {
             .tag(AppTab.journal)
         }
         .overlay(alignment: .bottom) {
-            if photoManager.isScanning {
+            if photoManager.isScanning || photoManager.isScanPaused {
                 Button {
                     showingScanProgress = true
                 } label: {
                     HStack(spacing: 10) {
-                        ProgressView()
-                            .tint(.white)
+                        if photoManager.isScanning {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "pause.circle.fill")
+                        }
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Finding pet moments")
+                            Text(photoManager.isScanPaused ? "Scan paused" : "Finding pet moments")
                                 .font(.subheadline.weight(.semibold))
                             Text("\(photoManager.scannedPhotosCount.formatted()) of \(photoManager.totalPhotosToScan.formatted())")
                                 .font(.caption)
@@ -74,7 +78,7 @@ struct ContentView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color.blue)
+                    .background(photoManager.isScanPaused ? Color.orange : Color.blue)
                     .clipShape(Capsule())
                     .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
                     .padding(.horizontal, 16)
@@ -258,10 +262,10 @@ struct HomeView: View {
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("A moment worth writing")
+                    Text("\(seed.photoIdentifiers.count) photos from \(seed.date.formatted(date: .abbreviated, time: .omitted))")
                         .font(.headline)
                         .foregroundColor(.primary)
-                    Text("\(seed.photoIdentifiers.count) photos from \(seed.date.formatted(date: .abbreviated, time: .omitted))")
+                    Text("Add the story behind this photo set")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -646,7 +650,7 @@ struct RecentPhotosView: View {
                         GridItem(.flexible())
                     ], spacing: 8) {
                         ForEach(recentPhotos) { photo in
-                            NavigationLink(destination: PhotoDetailView(photo: photo)) {
+                            NavigationLink(destination: PhotoDetailView(photo: photo, photos: recentPhotos)) {
                                 PhotoThumbnailView(photo: photo)
                             }
                         }

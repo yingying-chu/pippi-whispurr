@@ -85,7 +85,7 @@ struct PhotoMapBrowserView: View {
                     }
 
                     if let selectedPhoto {
-                        NavigationLink(destination: PhotoDetailView(photo: selectedPhoto)) {
+                        NavigationLink(destination: PhotoDetailView(photo: selectedPhoto, photos: photos)) {
                             HStack(spacing: 12) {
                                 PhotoThumbnailView(photo: selectedPhoto)
                                     .frame(width: 64, height: 64)

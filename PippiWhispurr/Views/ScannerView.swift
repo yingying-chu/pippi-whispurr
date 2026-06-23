@@ -86,7 +86,7 @@ struct ScannerView: View {
                     Button(action: startScanning) {
                         HStack {
                             Image(systemName: "play.fill")
-                            Text("Scan All Remaining")
+                            Text(photoManager.isScanPaused ? "Resume Scan" : "Scan All Remaining")
                         }
                         .font(.headline)
                         .foregroundColor(.white)
@@ -118,6 +118,14 @@ struct ScannerView: View {
                         Text("Progress is saved automatically.")
                             .font(.caption)
                             .foregroundColor(.secondary)
+
+                        Button {
+                            photoManager.pauseScan()
+                        } label: {
+                            Label("Pause Scan", systemImage: "pause.fill")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .buttonStyle(.bordered)
                     }
                 }
 
@@ -153,6 +161,9 @@ struct ScannerView: View {
     }
 
     private var scanTitle: String {
+        if photoManager.isScanPaused {
+            return "Scan Paused"
+        }
         if !photoManager.isScanning && photoManager.remainingPhotoCount == 0 {
             return "You're All Caught Up"
         }
@@ -163,13 +174,16 @@ struct ScannerView: View {
     }
 
     private var scanDescription: String {
+        if photoManager.isScanPaused {
+            return "Everything checked so far is saved. Resume whenever you're ready."
+        }
         if !photoManager.isScanning && photoManager.remainingPhotoCount == 0 {
             return "PiPi has analyzed all currently available photos. New photos can be scanned later."
         }
         if !photoManager.isScanning && photoManager.scanProgress >= 1.0 {
             return "This batch is safely saved. You can continue with another batch now or return later."
         }
-        return "PiPi can check everything that remains. You can keep using the app while it finds pet photos and understands what is happening in them."
+        return "PiPi checks the remaining photos for cats and dogs and prepares the matches for your Library. You can keep using the app while it works."
     }
 
     private var completionSummary: String {

@@ -273,12 +273,14 @@ struct PetProfileView: View {
                                 date: pet.birthday,
                                 showsAge: true
                             )
-                            Divider()
-                            profileDateRow(
-                                title: "Adoption Day",
-                                systemImage: "house.fill",
-                                date: pet.adoptionDate
-                            )
+                            if pet.adoptionDate != nil {
+                                Divider()
+                                profileDateRow(
+                                    title: "Adoption Day",
+                                    systemImage: "house.fill",
+                                    date: pet.adoptionDate
+                                )
+                            }
                             if pet.foodName != nil || pet.foodBrand != nil {
                                 Divider()
                                 profileTextRow(
@@ -322,7 +324,7 @@ struct PetProfileView: View {
                                     spacing: 8
                                 ) {
                                     ForEach(assignedPhotos) { photo in
-                                        NavigationLink(destination: PhotoDetailView(photo: photo)) {
+                                        NavigationLink(destination: PhotoDetailView(photo: photo, photos: assignedPhotos)) {
                                             PhotoThumbnailView(photo: photo)
                                         }
                                     }

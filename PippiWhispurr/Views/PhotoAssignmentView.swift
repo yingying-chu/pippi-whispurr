@@ -36,28 +36,34 @@ struct PhotoAssignmentView: View {
                             .padding(.horizontal, 32)
                     }
                 } else {
-                    List(storyStore.pets) { pet in
-                        Button {
-                            toggle(pet.id)
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(pet.name)
-                                        .foregroundColor(.primary)
-                                    Text(pet.species)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                    List {
+                        Section {
+                            ForEach(storyStore.pets) { pet in
+                                Button {
+                                    toggle(pet.id)
+                                } label: {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(pet.name)
+                                                .foregroundColor(.primary)
+                                            Text(pet.species)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: selectedPetIDs.contains(pet.id) ? "checkmark.circle.fill" : "circle")
+                                            .font(.title3)
+                                            .foregroundColor(selectedPetIDs.contains(pet.id) ? .blue : .secondary)
+                                    }
+                                    .contentShape(Rectangle())
                                 }
-
-                                Spacer()
-
-                                Image(systemName: selectedPetIDs.contains(pet.id) ? "checkmark.circle.fill" : "circle")
-                                    .font(.title3)
-                                    .foregroundColor(selectedPetIDs.contains(pet.id) ? .blue : .secondary)
+                                .buttonStyle(.plain)
                             }
-                            .contentShape(Rectangle())
+                        } footer: {
+                            Text("Select every pet who appears in this photo. You can choose more than one.")
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }

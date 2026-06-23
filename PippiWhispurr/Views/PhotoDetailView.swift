@@ -11,11 +11,26 @@ import Photos
 struct PhotoDetailView: View {
     @EnvironmentObject var photoManager: PhotoManager
     @EnvironmentObject private var storyStore: StoryStore
-    let photo: PetPhoto
-    @State private var image: UIImage?
+    private let initialPhoto: PetPhoto
+    private let initialBrowsingPhotos: [PetPhoto]
+    @State private var currentPhotoID: String
+    @State private var browsingPhotos: [PetPhoto] = []
+    @State private var dragOffset: CGFloat = 0
     @State private var showingPetAssignment = false
     @State private var showingLocationMap = false
+    @State private var showingDeleteConfirmation = false
+    @State private var deletionError: String?
     @Environment(\.dismiss) var dismiss
+
+    init(photo: PetPhoto, photos: [PetPhoto] = []) {
+        initialPhoto = photo
+        initialBrowsingPhotos = photos
+        _currentPhotoID = State(initialValue: photo.id)
+    }
+
+    private var photo: PetPhoto {
+        browsingPhotos.first { $0.id == currentPhotoID } ?? initialPhoto
+    }
 
     private var isFavorite: Bool { photoManager.isFavorite(photo) }
 
@@ -24,16 +39,32 @@ struct PhotoDetailView: View {
             Color.black.ignoresSafeArea()
 
             VStack {
-                if let image = image {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                FullPhotoPage(photo: photo)
+                    .id(photo.id)
+                    .offset(x: dragOffset)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { value in
+                                dragOffset = value.translation.width
+                            }
+                            .onEnded { value in
+                                movePhoto(for: value.translation.width)
+                            }
+                    )
+                    .overlay(alignment: .bottomTrailing) {
+                        if browsingPhotos.count > 1 {
+                            Text(photoPositionText)
+                                .font(.caption.monospacedDigit().weight(.semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Capsule())
+                                .padding(10)
+                        }
+                    }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -51,15 +82,6 @@ struct PhotoDetailView: View {
                         }
 
                         Spacer()
-
-                        Button(action: { photoManager.toggleFavorite(photo) }) {
-                            Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                .font(.title2)
-                                .foregroundColor(isFavorite ? .red : .white)
-                                .padding(8)
-                                .background(Color.white.opacity(0.15))
-                                .clipShape(Circle())
-                        }
 
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("Confidence")
@@ -98,15 +120,41 @@ struct PhotoDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
                 Button(action: { photoManager.toggleFavorite(photo) }) {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .foregroundColor(isFavorite ? .red : .primary)
                 }
+                .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
+
+                Menu {
+                    Section("Correct recognition") {
+                        Button("Mark as Cat") { correctType(.cat) }
+                        Button("Mark as Dog") { correctType(.dog) }
+                    }
+
+                    Button("Remove from PiPi", role: .destructive) {
+                        removeCurrentPhotoFromPiPi()
+                    }
+
+                    Button("Delete from iPhone Photos", role: .destructive) {
+                        showingDeleteConfirmation = true
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
             }
         }
-        .task {
-            image = await photoManager.loadFullImage(for: photo.asset)
+        .onAppear {
+            guard browsingPhotos.isEmpty else { return }
+            if initialBrowsingPhotos.contains(where: { $0.id == initialPhoto.id }) {
+                browsingPhotos = initialBrowsingPhotos
+                return
+            }
+            let filtered = photoManager.filteredPetPhotos
+            browsingPhotos = filtered.contains(where: { $0.id == initialPhoto.id })
+                ? filtered
+                : photoManager.petPhotos
         }
         .sheet(isPresented: $showingPetAssignment) {
             PhotoAssignmentView(
@@ -116,6 +164,25 @@ struct PhotoDetailView: View {
         }
         .sheet(isPresented: $showingLocationMap) {
             PhotoLocationFullMap(photo: photo)
+        }
+        .alert("Delete this photo from iPhone Photos?", isPresented: $showingDeleteConfirmation) {
+            Button("Delete Photo", role: .destructive) {
+                deleteCurrentPhotoFromLibrary()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("iOS will ask you to confirm this change. The photo will also disappear from PiPi.")
+        }
+        .alert(
+            "Photo Could Not Be Deleted",
+            isPresented: Binding(
+                get: { deletionError != nil },
+                set: { if !$0 { deletionError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deletionError ?? "Please try again.")
         }
     }
 
@@ -137,5 +204,93 @@ struct PhotoDetailView: View {
         formatter.dateStyle = .long
         formatter.timeStyle = .short
         return formatter.string(from: photo.date)
+    }
+
+    private var photoPositionText: String {
+        guard let index = browsingPhotos.firstIndex(where: { $0.id == photo.id }) else {
+            return ""
+        }
+        return "\(index + 1) / \(browsingPhotos.count)"
+    }
+
+    private func movePhoto(for translation: CGFloat) {
+        defer {
+            withAnimation(.easeOut(duration: 0.18)) {
+                dragOffset = 0
+            }
+        }
+        guard abs(translation) >= 55,
+              let index = browsingPhotos.firstIndex(where: { $0.id == photo.id }) else {
+            return
+        }
+
+        let newIndex = translation < 0 ? index + 1 : index - 1
+        guard browsingPhotos.indices.contains(newIndex) else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentPhotoID = browsingPhotos[newIndex].id
+        }
+    }
+
+    private func correctType(_ petType: PetPhoto.PetType) {
+        photoManager.correctPetType(photo, to: petType)
+        if let index = browsingPhotos.firstIndex(where: { $0.id == photo.id }) {
+            browsingPhotos[index].petType = petType
+        }
+    }
+
+    private func removeCurrentPhotoFromPiPi() {
+        let photoToRemove = photo
+        moveAwayFromCurrentPhoto()
+        photoManager.removeFromPiPi(photoToRemove)
+    }
+
+    private func deleteCurrentPhotoFromLibrary() {
+        let photoToDelete = photo
+        Task {
+            do {
+                try await photoManager.deleteFromPhotoLibrary(photoToDelete)
+                moveAwayFromCurrentPhoto(removing: photoToDelete.id)
+            } catch {
+                deletionError = error.localizedDescription
+            }
+        }
+    }
+
+    private func moveAwayFromCurrentPhoto(removing identifier: String? = nil) {
+        let removedID = identifier ?? photo.id
+        guard let index = browsingPhotos.firstIndex(where: { $0.id == removedID }) else {
+            dismiss()
+            return
+        }
+
+        browsingPhotos.remove(at: index)
+        guard !browsingPhotos.isEmpty else {
+            dismiss()
+            return
+        }
+        currentPhotoID = browsingPhotos[min(index, browsingPhotos.count - 1)].id
+    }
+}
+
+private struct FullPhotoPage: View {
+    @EnvironmentObject private var photoManager: PhotoManager
+    let photo: PetPhoto
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task(id: photo.id) {
+            image = await photoManager.loadFullImage(for: photo.asset)
+        }
     }
 }
