@@ -11,11 +11,30 @@ import UIKit
 
 struct PetPhoto: Identifiable, Hashable {
     let id: String
-    let asset: PHAsset
+    let asset: PHAsset?
+    let localImageFilename: String?
     let date: Date
     let confidence: Float
     var petType: PetType
     var semanticLabels: [String] = []
+
+    init(
+        id: String,
+        asset: PHAsset? = nil,
+        localImageFilename: String? = nil,
+        date: Date,
+        confidence: Float,
+        petType: PetType,
+        semanticLabels: [String] = []
+    ) {
+        self.id = id
+        self.asset = asset
+        self.localImageFilename = localImageFilename
+        self.date = date
+        self.confidence = confidence
+        self.petType = petType
+        self.semanticLabels = semanticLabels
+    }
 
     enum PetType: String, CaseIterable, Codable {
         case dog = "Dog"

@@ -15,7 +15,6 @@ struct PhotoDetailView: View {
     private let initialBrowsingPhotos: [PetPhoto]
     @State private var currentPhotoID: String
     @State private var browsingPhotos: [PetPhoto] = []
-    @State private var dragOffset: CGFloat = 0
     @State private var showingPetAssignment = false
     @State private var showingLocationMap = false
     @State private var showingDeleteConfirmation = false
@@ -39,31 +38,43 @@ struct PhotoDetailView: View {
             Color.black.ignoresSafeArea()
 
             VStack {
-                FullPhotoPage(photo: photo)
-                    .id(photo.id)
-                    .offset(x: dragOffset)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { value in
-                                dragOffset = value.translation.width
+                TabView(selection: $currentPhotoID) {
+                    ForEach(Array(pagePhotos.enumerated()), id: \.element.id) { index, pagePhoto in
+                        FullPhotoPage(
+                            photo: pagePhoto,
+                            shouldLoad: abs(index - (currentPhotoIndex ?? 0)) <= 1
+                        )
+                            .tag(pagePhoto.id)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .overlay(alignment: .bottom) {
+                    if pagePhotos.count > 1 {
+                        HStack(spacing: 12) {
+                            Button(action: showPreviousPhoto) {
+                                Image(systemName: "chevron.left")
                             }
-                            .onEnded { value in
-                                movePhoto(for: value.translation.width)
-                            }
-                    )
-                    .overlay(alignment: .bottomTrailing) {
-                        if browsingPhotos.count > 1 {
+                            .disabled(!hasPreviousPhoto)
+
+                            Label("Swipe for more", systemImage: "hand.draw")
+                                .font(.caption.weight(.semibold))
+
                             Text(photoPositionText)
                                 .font(.caption.monospacedDigit().weight(.semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.6))
-                                .clipShape(Capsule())
-                                .padding(10)
+
+                            Button(action: showNextPhoto) {
+                                Image(systemName: "chevron.right")
+                            }
+                            .disabled(!hasNextPhoto)
                         }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .background(Color.black.opacity(0.68))
+                        .clipShape(Capsule())
+                        .padding(.bottom, 12)
                     }
+                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -94,7 +105,7 @@ struct PhotoDetailView: View {
                         }
                     }
 
-                    if let coordinate = photo.asset.location?.coordinate {
+                    if let coordinate = photo.asset?.location?.coordinate {
                         PhotoLocationCard(coordinate: coordinate) {
                             showingLocationMap = true
                         }
@@ -213,22 +224,31 @@ struct PhotoDetailView: View {
         return "\(index + 1) / \(browsingPhotos.count)"
     }
 
-    private func movePhoto(for translation: CGFloat) {
-        defer {
-            withAnimation(.easeOut(duration: 0.18)) {
-                dragOffset = 0
-            }
-        }
-        guard abs(translation) >= 55,
-              let index = browsingPhotos.firstIndex(where: { $0.id == photo.id }) else {
-            return
-        }
+    private var pagePhotos: [PetPhoto] {
+        browsingPhotos.isEmpty ? [initialPhoto] : browsingPhotos
+    }
 
-        let newIndex = translation < 0 ? index + 1 : index - 1
-        guard browsingPhotos.indices.contains(newIndex) else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            currentPhotoID = browsingPhotos[newIndex].id
-        }
+    private var currentPhotoIndex: Int? {
+        pagePhotos.firstIndex(where: { $0.id == currentPhotoID })
+    }
+
+    private var hasPreviousPhoto: Bool {
+        (currentPhotoIndex ?? 0) > 0
+    }
+
+    private var hasNextPhoto: Bool {
+        guard let currentPhotoIndex else { return false }
+        return currentPhotoIndex < pagePhotos.count - 1
+    }
+
+    private func showPreviousPhoto() {
+        guard let currentPhotoIndex, currentPhotoIndex > 0 else { return }
+        withAnimation { currentPhotoID = pagePhotos[currentPhotoIndex - 1].id }
+    }
+
+    private func showNextPhoto() {
+        guard let currentPhotoIndex, currentPhotoIndex < pagePhotos.count - 1 else { return }
+        withAnimation { currentPhotoID = pagePhotos[currentPhotoIndex + 1].id }
     }
 
     private func correctType(_ petType: PetPhoto.PetType) {
@@ -275,6 +295,7 @@ struct PhotoDetailView: View {
 private struct FullPhotoPage: View {
     @EnvironmentObject private var photoManager: PhotoManager
     let photo: PetPhoto
+    let shouldLoad: Bool
     @State private var image: UIImage?
 
     var body: some View {
@@ -289,8 +310,12 @@ private struct FullPhotoPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: photo.id) {
-            image = await photoManager.loadFullImage(for: photo.asset)
+        .task(id: "\(photo.id)-\(shouldLoad)") {
+            guard shouldLoad else {
+                image = nil
+                return
+            }
+            image = await photoManager.loadFullImage(for: photo)
         }
     }
 }

@@ -16,25 +16,25 @@ struct CalendarView: View {
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             // Month header
             HStack {
                 Button(action: previousMonth) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.forestInk)
                 }
 
                 Spacer()
 
                 Text(monthYearString)
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                    .font(.pippi(18, weight: .extraBold))
+                    .foregroundColor(.forestInk)
 
                 Spacer()
 
                 Button(action: nextMonth) {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.forestInk)
                 }
             }
             .padding(.horizontal)
@@ -43,9 +43,9 @@ struct CalendarView: View {
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
+                        .font(.pippi(8, weight: .semibold))
+                        .tracking(1)
+                        .foregroundColor(.forestInk.opacity(0.35))
                 }
             }
             .padding(.horizontal, 8)
@@ -67,14 +67,14 @@ struct CalendarView: View {
                         }
                     } else {
                         Color.clear
-                            .frame(height: 44)
+                            .frame(height: 36)
                     }
                 }
             }
             .padding(.horizontal, 8)
         }
-        .padding(.vertical)
-        .background(Color(.systemBackground))
+        .padding(.vertical, 10)
+        .background(Color.cream)
     }
 
     private var monthYearString: String {
@@ -147,28 +147,29 @@ struct DayCell: View {
     private let calendar = Calendar.current
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 1) {
             Text("\(calendar.component(.day, from: date))")
-                .font(.system(size: 16))
-                .fontWeight(isSelected ? .bold : .regular)
-                .foregroundColor(isSelected ? .white : (hasPhotos ? .primary : .secondary))
-                .frame(height: 30)
+                .font(.pippi(12, weight: isSelected ? .extraBold : .regular))
+                .foregroundColor(isSelected ? .cream : .forestInk)
+                .frame(width: 30, height: 30)
+                .background(isSelected ? Color.forestInk : Color.clear)
+                .clipShape(Circle())
 
-            if hasPhotos {
+            if hasPhotos && !isSelected {
                 Circle()
-                    .fill(isSelected ? Color.white : Color.blue)
-                    .frame(width: 6, height: 6)
+                    .fill(markerColor)
+                    .frame(width: 5, height: 5)
             }
         }
-        .frame(height: 44)
+        .frame(height: 36)
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.blue : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(hasPhotos && !isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
-        )
+    }
+
+    private var markerColor: Color {
+        switch calendar.component(.day, from: date) % 3 {
+        case 0: return .honeyYellow
+        case 1: return .mintSage
+        default: return .stickyLavender
+        }
     }
 }

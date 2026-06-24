@@ -64,6 +64,7 @@ struct PhotoThumbnailView: View {
     @EnvironmentObject private var storyStore: StoryStore
     let photo: PetPhoto
     @State private var image: UIImage?
+    @State private var imageRequestID: PHImageRequestID?
 
     var body: some View {
         GeometryReader { geometry in
@@ -96,7 +97,7 @@ struct PhotoThumbnailView: View {
                     if isAssigned {
                         Image(systemName: "pawprint.fill")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.forestInk)
                             .padding(6)
                             .background(Color.white.opacity(0.9))
                             .cornerRadius(6)
@@ -107,8 +108,13 @@ struct PhotoThumbnailView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .task {
-            await loadThumbnail()
+        .onAppear {
+            requestThumbnail()
+        }
+        .onDisappear {
+            if let imageRequestID {
+                PHImageManager.default().cancelImageRequest(imageRequestID)
+            }
         }
     }
 
@@ -119,30 +125,38 @@ struct PhotoThumbnailView: View {
         return !record.assignedPetIDs.isEmpty
     }
 
-    private func loadThumbnail() async {
-        // Use PhotoManager's method to load a smaller version
+    private func requestThumbnail() {
+        if photo.asset == nil {
+            Task {
+                let loaded = await photoManager.loadFullImage(for: photo)
+                await MainActor.run { image = loaded }
+            }
+            return
+        }
+        if let imageRequestID {
+            PHImageManager.default().cancelImageRequest(imageRequestID)
+        }
         let options = PHImageRequestOptions()
-        options.deliveryMode = .fastFormat
+        options.deliveryMode = .opportunistic
         options.resizeMode = .fast
         options.isSynchronous = false
-        options.isNetworkAccessAllowed = false
+        options.isNetworkAccessAllowed = true
 
         let manager = PHImageManager.default()
-        let targetSize = CGSize(width: 300, height: 300)
+        let targetSize = CGSize(width: 600, height: 600)
 
-        image = await withCheckedContinuation { continuation in
-            var hasResumed = false
-            manager.requestImage(
-                for: photo.asset,
-                targetSize: targetSize,
-                contentMode: .aspectFill,
-                options: options
-            ) { result, info in
-                // Only resume once - PHImageManager can call this multiple times
-                if !hasResumed {
-                    hasResumed = true
-                    continuation.resume(returning: result)
-                }
+        guard let asset = photo.asset else { return }
+        imageRequestID = manager.requestImage(
+            for: asset,
+            targetSize: targetSize,
+            contentMode: .aspectFill,
+            options: options
+        ) { result, info in
+            guard let result else { return }
+            let isCancelled = (info?[PHImageCancelledKey] as? Bool) ?? false
+            guard !isCancelled else { return }
+            Task { @MainActor in
+                image = result
             }
         }
     }

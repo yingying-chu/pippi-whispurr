@@ -82,6 +82,7 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
     var id: String { assetIdentifier }
 
     let assetIdentifier: String
+    var localImageFilename: String?
     var captureDate: Date
     var detectedPetType: PetPhoto.PetType
     var detectionConfidence: Float
@@ -95,6 +96,7 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
 
     init(
         assetIdentifier: String,
+        localImageFilename: String? = nil,
         captureDate: Date,
         detectedPetType: PetPhoto.PetType,
         detectionConfidence: Float,
@@ -107,6 +109,7 @@ struct PhotoRecord: Identifiable, Codable, Hashable {
         updatedAt: Date = Date()
     ) {
         self.assetIdentifier = assetIdentifier
+        self.localImageFilename = localImageFilename
         self.captureDate = captureDate
         self.detectedPetType = detectedPetType
         self.detectionConfidence = detectionConfidence

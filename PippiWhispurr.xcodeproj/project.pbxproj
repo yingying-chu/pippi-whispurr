@@ -24,6 +24,11 @@
 		2A000001000000000000000F /* PhotoMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000010 /* PhotoMapView.swift */; };
 		2A0000010000000000000010 /* JournalViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000011 /* JournalViews.swift */; };
 		2A0000010000000000000011 /* HealthViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000012 /* HealthViews.swift */; };
+		2A0000010000000000000012 /* PippiTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000013 /* PippiTheme.swift */; };
+		2A0000010000000000000013 /* BricolageGrotesque-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000014 /* BricolageGrotesque-Regular.ttf */; };
+		2A0000010000000000000014 /* BricolageGrotesque-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000015 /* BricolageGrotesque-SemiBold.ttf */; };
+		2A0000010000000000000015 /* BricolageGrotesque-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000016 /* BricolageGrotesque-ExtraBold.ttf */; };
+		2A0000010000000000000016 /* Caveat-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000000017 /* Caveat-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +51,11 @@
 		2B0000010000000000000010 /* PhotoMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoMapView.swift; sourceTree = "<group>"; };
 		2B0000010000000000000011 /* JournalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViews.swift; sourceTree = "<group>"; };
 		2B0000010000000000000012 /* HealthViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthViews.swift; sourceTree = "<group>"; };
+		2B0000010000000000000013 /* PippiTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PippiTheme.swift; sourceTree = "<group>"; };
+		2B0000010000000000000014 /* BricolageGrotesque-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BricolageGrotesque-Regular.ttf"; sourceTree = "<group>"; };
+		2B0000010000000000000015 /* BricolageGrotesque-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BricolageGrotesque-SemiBold.ttf"; sourceTree = "<group>"; };
+		2B0000010000000000000016 /* BricolageGrotesque-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BricolageGrotesque-ExtraBold.ttf"; sourceTree = "<group>"; };
+		2B0000010000000000000017 /* Caveat-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Caveat-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,8 +81,10 @@
 			isa = PBXGroup;
 			children = (
 				2B0000010000000000000001 /* PippiWhispurrApp.swift */,
+				2B0000010000000000000013 /* PippiTheme.swift */,
 				2B000001000000000000000B /* Info.plist */,
 				2B0000010000000000000003 /* Assets.xcassets */,
+				2D0000000000000000000007 /* Fonts */,
 				2D0000000000000000000004 /* Views */,
 				2D0000000000000000000005 /* Models */,
 				2D0000000000000000000006 /* Managers */,
@@ -122,6 +134,17 @@
 				2B000001000000000000000D /* StoryStore.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		2D0000000000000000000007 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				2B0000010000000000000014 /* BricolageGrotesque-Regular.ttf */,
+				2B0000010000000000000015 /* BricolageGrotesque-SemiBold.ttf */,
+				2B0000010000000000000016 /* BricolageGrotesque-ExtraBold.ttf */,
+				2B0000010000000000000017 /* Caveat-Regular.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -183,6 +206,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				2A0000010000000000000003 /* Assets.xcassets in Resources */,
+				2A0000010000000000000013 /* BricolageGrotesque-Regular.ttf in Resources */,
+				2A0000010000000000000014 /* BricolageGrotesque-SemiBold.ttf in Resources */,
+				2A0000010000000000000015 /* BricolageGrotesque-ExtraBold.ttf in Resources */,
+				2A0000010000000000000016 /* Caveat-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -195,6 +222,7 @@
 			files = (
 				2A0000010000000000000002 /* ContentView.swift in Sources */,
 				2A0000010000000000000001 /* PippiWhispurrApp.swift in Sources */,
+				2A0000010000000000000012 /* PippiTheme.swift in Sources */,
 				2A0000010000000000000004 /* CalendarView.swift in Sources */,
 				2A0000010000000000000005 /* PhotoGridView.swift in Sources */,
 				2A0000010000000000000006 /* PhotoDetailView.swift in Sources */,
@@ -219,7 +247,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -282,7 +310,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";

@@ -194,7 +194,7 @@ struct PetHealthView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                     Button("Add First Check-in") { showingEditor = true }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(PippiPrimaryButtonStyle())
                         .controlSize(.large)
                 }
             } else {

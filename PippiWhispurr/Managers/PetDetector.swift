@@ -23,7 +23,6 @@ class PetDetector {
 
         return await Task.detached(priority: .utility) {
             let animalRequest = VNRecognizeAnimalsRequest()
-            let classificationRequest = VNClassifyImageRequest()
             let handler = VNImageRequestHandler(
                 cgImage: cgImage,
                 orientation: image.imageOrientation.cgImageOrientation,
@@ -31,7 +30,7 @@ class PetDetector {
             )
 
             do {
-                try handler.perform([animalRequest, classificationRequest])
+                try handler.perform([animalRequest])
             } catch {
                 return DetectionResult(petType: nil, confidence: 0.0, semanticLabels: [])
             }
@@ -47,6 +46,25 @@ class PetDetector {
             case .some(_): petType = .other
             case .none: petType = nil
             }
+
+            // Full image classification is much more expensive. Most camera
+            // libraries contain many non-pet photos, so only run it for a
+            // confident animal match that can actually enter the PiPi Library.
+            guard petType != nil, (bestLabel?.confidence ?? 0) > 0.6 else {
+                return DetectionResult(
+                    petType: petType,
+                    confidence: bestLabel?.confidence ?? 0,
+                    semanticLabels: []
+                )
+            }
+
+            let classificationRequest = VNClassifyImageRequest()
+            let classificationHandler = VNImageRequestHandler(
+                cgImage: cgImage,
+                orientation: image.imageOrientation.cgImageOrientation,
+                options: [:]
+            )
+            try? classificationHandler.perform([classificationRequest])
 
             let semanticLabels = (classificationRequest.results ?? [])
                 .filter { $0.confidence >= 0.08 }

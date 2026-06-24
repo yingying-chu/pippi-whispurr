@@ -119,6 +119,27 @@ final class StoryStore: ObservableObject {
         save()
     }
 
+    func storeScanBatch(_ newPhotos: [PhotoRecord], analyzedIdentifiers: [String]) {
+        if !newPhotos.isEmpty {
+            var recordsByID = Dictionary(uniqueKeysWithValues: photos.map { ($0.id, $0) })
+            for photo in newPhotos {
+                if let existing = recordsByID[photo.id] {
+                    var merged = photo
+                    merged.assignedPetIDs = existing.assignedPetIDs
+                    merged.isFavorite = existing.isFavorite
+                    merged.caption = existing.caption
+                    recordsByID[photo.id] = merged
+                } else {
+                    recordsByID[photo.id] = photo
+                }
+            }
+            photos = Array(recordsByID.values)
+            sortPhotos()
+        }
+        scanHistory.analyzedPhotoIdentifiers.formUnion(analyzedIdentifiers)
+        save()
+    }
+
     func assignPhoto(id: String, to petIDs: Set<UUID>) {
         guard let index = photos.firstIndex(where: { $0.id == id }) else { return }
         photos[index].assignedPetIDs = petIDs

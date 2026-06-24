@@ -68,27 +68,34 @@ struct PetListView: View {
 
     private var petSwitcher: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 18) {
+            HStack(spacing: 10) {
                 ForEach(storyStore.pets) { pet in
                     Button {
-                        selectedPetID = pet.id
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedPetID = pet.id
+                        }
                     } label: {
-                        VStack(spacing: 5) {
+                        VStack(spacing: 6) {
                             PetProfileImageView(
                                 assetIdentifier: pet.profilePhotoIdentifier,
-                                size: 48,
+                                size: 50,
                                 fallback: speciesEmoji(for: pet)
                             )
                             .overlay {
                                 if activePetID == pet.id {
-                                    Circle().stroke(Color.blue, lineWidth: 3)
+                                    Circle().stroke(Color.honeyYellow, lineWidth: 3)
                                 }
                             }
 
                             Text(pet.name)
-                                .font(.caption.weight(activePetID == pet.id ? .bold : .regular))
-                                .foregroundColor(.primary)
+                                .font(.pippi(11, weight: activePetID == pet.id ? .semibold : .regular))
+                                .foregroundColor(activePetID == pet.id ? .cream : .forestInk)
                         }
+                        .frame(minWidth: 72)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
+                        .background(activePetID == pet.id ? Color.forestInk : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: .radiusCard, style: .continuous))
                     }
                     .buttonStyle(.plain)
                 }
@@ -99,19 +106,23 @@ struct PetListView: View {
                     VStack(spacing: 5) {
                         Image(systemName: "plus")
                             .font(.headline)
-                            .frame(width: 48, height: 48)
-                            .background(Color(.secondarySystemFill))
+                            .frame(width: 50, height: 50)
+                            .background(Color.forestInk.opacity(0.08))
                             .clipShape(Circle())
                         Text("Add")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.pippi(11))
+                            .foregroundColor(.forestInk.opacity(0.65))
                     }
+                    .frame(minWidth: 72)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
+        .background(Color.cream)
     }
 
     private func speciesEmoji(for pet: PetProfile) -> String {
@@ -126,7 +137,7 @@ struct PetListView: View {
         VStack(spacing: 18) {
             Image(systemName: "pawprint.circle.fill")
                 .font(.system(size: 72))
-                .foregroundColor(.blue)
+                .foregroundColor(.forestInk)
 
             Text("Every story starts with a pet")
                 .font(.title2)
@@ -140,7 +151,7 @@ struct PetListView: View {
             Button("Create My First Pet") {
                 showingNewPet = true
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(PippiPrimaryButtonStyle())
         }
         .padding()
     }
@@ -172,49 +183,92 @@ struct PetProfileView: View {
             .sorted { $0.memoryDate > $1.memoryDate }
     }
 
+    private var petMilestones: [Milestone] {
+        storyStore.milestones
+            .filter { $0.petID == petID }
+            .sorted { $0.date > $1.date }
+    }
+
     var body: some View {
         Group {
             if let pet {
                 ScrollView {
-                    VStack(spacing: 24) {
-                        PetProfileImageView(
-                            assetIdentifier: pet.profilePhotoIdentifier,
-                            size: 132,
-                            fallback: speciesEmoji(for: pet)
-                        )
+                    VStack(spacing: 16) {
+                        ZStack(alignment: .bottomLeading) {
+                            PetProfileImageView(
+                                assetIdentifier: pet.profilePhotoIdentifier,
+                                size: UIScreen.main.bounds.width,
+                                fallback: speciesEmoji(for: pet),
+                                isCircular: false
+                            )
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 280)
+                            .clipped()
 
-                        VStack(spacing: 6) {
-                            Text(pet.name)
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
+                            LinearGradient(
+                                colors: [.forestInk.opacity(0.45), .clear],
+                                startPoint: .top,
+                                endPoint: .center
+                            )
+                            .frame(maxWidth: .infinity, maxHeight: 280)
+                            .allowsHitTesting(false)
 
-                            Text(profileSubtitle(for: pet))
-                                .foregroundColor(.secondary)
+                            LinearGradient(
+                                colors: [.clear, .forestInk.opacity(0.75)],
+                                startPoint: .center,
+                                endPoint: .bottom
+                            )
+                            .frame(maxWidth: .infinity, maxHeight: 280)
+                            .allowsHitTesting(false)
+
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(pet.name)
+                                    .font(.pippi(32, weight: .extraBold))
+                                    .foregroundColor(.forestInk)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.honeyYellow)
+                                    .cornerRadius(4)
+
+                                Text(profileSubtitle(for: pet))
+                                    .font(.pippiScript(14))
+                                    .italic()
+                                    .foregroundColor(.white.opacity(0.88))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 3)
+                                    .background(Color.forestInk.opacity(0.65))
+                                    .clipShape(Capsule())
+                            }
+                            .padding(16)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, -16)
+
+                        profileStats
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("TIMELINE · \(timelineDateLabel)")
+                                .font(.pippi(10, weight: .semibold))
+                                .tracking(1.8)
+                                .foregroundColor(.forestInk.opacity(0.45))
+
+                            timelineStrip
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                         if !pet.introduction.isEmpty {
                             Text(pet.introduction)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding()
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .cornerRadius(14)
+                                .pippiCard()
                         }
-
-                        Button {
-                            showingJournalEditor = true
-                        } label: {
-                            Label("Record a Story", systemImage: "square.and.pencil")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
 
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("Stories")
-                                    .font(.title2.bold())
+                                Text("STORIES")
+                                    .font(.pippi(10, weight: .semibold))
+                                    .tracking(1.8)
+                                    .foregroundColor(.forestInk.opacity(0.45))
                                 Spacer()
                                 Text("\(recentMemories.count)")
                                     .foregroundColor(.secondary)
@@ -226,8 +280,7 @@ struct PetProfileView: View {
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding()
-                                    .background(Color(.secondarySystemGroupedBackground))
-                                    .cornerRadius(14)
+                                    .pippiCard()
                             } else {
                                 ForEach(recentMemories.prefix(3)) { memory in
                                     NavigationLink(destination: JournalDetailView(memoryID: memory.id)) {
@@ -249,16 +302,27 @@ struct PetProfileView: View {
                                             Spacer()
                                             Image(systemName: "chevron.right")
                                                 .font(.caption.bold())
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(.forestInk.opacity(0.5))
                                         }
                                         .padding()
-                                        .background(Color(.secondarySystemGroupedBackground))
-                                        .cornerRadius(14)
+                                        .pippiCard()
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
                         }
+
+                        Button {
+                            showingJournalEditor = true
+                        } label: {
+                            HStack(spacing: 7) {
+                                Text("→")
+                                Text("RECORD A STORY")
+                                    .tracking(1.3)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(PippiPrimaryButtonStyle())
 
                         VStack(spacing: 0) {
                             profileTextRow(
@@ -273,14 +337,6 @@ struct PetProfileView: View {
                                 date: pet.birthday,
                                 showsAge: true
                             )
-                            if pet.adoptionDate != nil {
-                                Divider()
-                                profileDateRow(
-                                    title: "Adoption Day",
-                                    systemImage: "house.fill",
-                                    date: pet.adoptionDate
-                                )
-                            }
                             if pet.foodName != nil || pet.foodBrand != nil {
                                 Divider()
                                 profileTextRow(
@@ -292,8 +348,12 @@ struct PetProfileView: View {
                                 )
                             }
                         }
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(14)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: .radiusCard, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: .radiusCard, style: .continuous)
+                                .stroke(Color.forestInk.opacity(0.08), lineWidth: 1)
+                        )
 
                         if assignedPhotos.isEmpty {
                             VStack(spacing: 8) {
@@ -356,12 +416,22 @@ struct PetProfileView: View {
                     }
                     .padding()
                 }
-                .navigationTitle(pet.name)
+                .navigationBarBackButtonHidden(true)
+                .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Edit") {
+                        Button {
                             showingEditor = true
+                        } label: {
+                            Label("EDIT PROFILE", systemImage: "pencil")
+                                .font(.pippi(10, weight: .semibold))
+                                .tracking(1.1)
+                                .foregroundColor(.cream)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background(Color.forestInk.opacity(0.75))
+                                .clipShape(Capsule())
                         }
                     }
                 }
@@ -382,11 +452,96 @@ struct PetProfileView: View {
         }
     }
 
-    private func profileSubtitle(for pet: PetProfile) -> String {
-        if let breed = pet.breed, !breed.isEmpty {
-            return "\(pet.species) · \(breed)"
+    private var profileStats: some View {
+        HStack(spacing: 8) {
+            profileStat(value: assignedPhotos.count, label: "PHOTOS", highlighted: false)
+            profileStat(value: recentMemories.count, label: "MEMORIES", highlighted: true)
+            profileStat(value: petMilestones.count, label: "MILESTONES", highlighted: false)
         }
-        return pet.species
+    }
+
+    private func profileStat(value: Int, label: String, highlighted: Bool) -> some View {
+        VStack(spacing: 3) {
+            Text("\(value)")
+                .font(.pippi(24, weight: .extraBold))
+                .foregroundColor(.forestInk)
+            Text(label)
+                .font(.pippi(8, weight: .semibold))
+                .tracking(1.2)
+                .foregroundColor(.forestInk.opacity(0.45))
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 72)
+        .background(highlighted ? Color.honeyYellow : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: .radiusCard, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: .radiusCard, style: .continuous)
+                .stroke(Color.forestInk.opacity(0.1), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 8, x: -3, y: 4)
+    }
+
+    @ViewBuilder
+    private var timelineStrip: some View {
+        HStack(spacing: 6) {
+            if assignedPhotos.isEmpty {
+                timelinePlaceholder(color: Color.mintSage.opacity(0.55))
+                timelinePlaceholder(color: Color.honeyYellow)
+                timelinePlaceholder(color: Color.stickyLavender.opacity(0.75))
+            } else {
+                ForEach(Array(assignedPhotos.prefix(3))) { photo in
+                    NavigationLink(destination: PhotoDetailView(photo: photo, photos: assignedPhotos)) {
+                        PhotoThumbnailView(photo: photo)
+                            .aspectRatio(1, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: .radiusPhoto))
+                    }
+                }
+            }
+        }
+    }
+
+    private func timelinePlaceholder(color: Color) -> some View {
+        RoundedRectangle(cornerRadius: .radiusPhoto, style: .continuous)
+            .fill(color)
+            .aspectRatio(1, contentMode: .fit)
+            .overlay(
+                RoundedRectangle(cornerRadius: .radiusPhoto, style: .continuous)
+                    .stroke(Color.forestInk.opacity(0.08), lineWidth: 1)
+            )
+    }
+
+    private var timelineDateLabel: String {
+        let date = assignedPhotos.first?.date
+            ?? recentMemories.first?.memoryDate
+            ?? Date()
+        return date.formatted(.dateTime.month(.abbreviated).day())
+            .uppercased()
+    }
+
+    private func profileSubtitle(for pet: PetProfile) -> String {
+        let identity: String
+        if let breed = pet.breed?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !breed.isEmpty {
+            identity = breed
+        } else {
+            identity = pet.species
+        }
+
+        guard let age = ageDescription(from: pet.birthday) else {
+            return identity
+        }
+        return "\(identity) · \(age)"
+    }
+
+    private func ageDescription(from birthday: Date?) -> String? {
+        guard let birthday, birthday <= Date() else { return nil }
+        let components = Calendar.current.dateComponents([.year, .month], from: birthday, to: Date())
+        let years = components.year ?? 0
+        let months = components.month ?? 0
+        if years > 0 {
+            return years == 1 ? "1 year old" : "\(years) years old"
+        }
+        return months == 1 ? "1 month old" : "\(months) months old"
     }
 
     private var healthSummary: String {
@@ -546,7 +701,7 @@ struct PetEditorView: View {
                                     systemImage: "photo.stack"
                                 )
                             }
-                            .buttonStyle(.borderedProminent)
+                            .buttonStyle(PippiPrimaryButtonStyle())
 
                             Text("Pick from photos PiPi has already scanned.")
                                 .font(.caption)
@@ -621,9 +776,9 @@ struct PetEditorView: View {
                     DatePicker("Birthday", selection: $birthday, displayedComponents: .date)
                 }
 
-                Toggle("Add adoption day", isOn: $hasAdoptionDate)
+                Toggle("Add a Together Since date", isOn: $hasAdoptionDate)
                 if hasAdoptionDate {
-                    DatePicker("Adoption Day", selection: $adoptionDate, displayedComponents: .date)
+                    DatePicker("Together Since", selection: $adoptionDate, displayedComponents: .date)
                 }
             }
 
@@ -768,6 +923,7 @@ struct PetEditorView: View {
 private struct ScannedProfilePhotoPicker: View {
     @EnvironmentObject private var photoManager: PhotoManager
     @Environment(\.dismiss) private var dismiss
+    @State private var scanAttempted = false
     let selectedIdentifier: String?
     let onSelect: (String) -> Void
 
@@ -783,12 +939,31 @@ private struct ScannedProfilePhotoPicker: View {
                     Image(systemName: "photo.stack")
                         .font(.system(size: 48))
                         .foregroundColor(.orange)
-                    Text("No scanned pet photos yet")
+                    Text(scanAttempted ? "No Pet Matches Found" : "No Scanned Pet Photos Yet")
                         .font(.title2.bold())
-                    Text("Scan photos from the Library tab first, or choose directly from your photo library on the previous screen.")
+                    Text(scanAttempted
+                         ? "PiPi checked the available photos but did not find a pet match. You can still choose any photo from the previous screen."
+                         : "Scan your photo library here, then choose a pet photo without leaving this page.")
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
+
+                    Button {
+                        scanAttempted = true
+                        Task { await photoManager.scanAllRemainingPhotos() }
+                    } label: {
+                        if photoManager.isScanning {
+                            HStack(spacing: 10) {
+                                ProgressView().tint(.cream)
+                                Text("SCANNING \(photoManager.scannedPhotosCount) / \(photoManager.totalPhotosToScan)")
+                            }
+                        } else {
+                            Label("SCAN PHOTOS NOW", systemImage: "magnifyingglass")
+                        }
+                    }
+                    .buttonStyle(PippiPrimaryButtonStyle())
+                    .disabled(photoManager.isScanning)
+                    .padding(.horizontal, 30)
                 }
             } else {
                 ScrollView {
@@ -818,6 +993,9 @@ private struct ScannedProfilePhotoPicker: View {
         }
         .navigationTitle("Scanned Photos")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await photoManager.prepareScanSummary()
+        }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
@@ -830,19 +1008,25 @@ private struct PetProfileImageView: View {
     let assetIdentifier: String?
     let size: CGFloat
     let fallback: String
+    var isCircular = true
     @State private var image: UIImage?
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.blue.opacity(0.12))
+            RoundedRectangle(cornerRadius: isCircular ? size / 2 : 0, style: .continuous)
+                .fill(Color.forestInk.opacity(0.12))
 
             if let image {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: size, height: size)
-                    .clipShape(Circle())
+                    .clipShape(
+                        RoundedRectangle(
+                            cornerRadius: isCircular ? size / 2 : 0,
+                            style: .continuous
+                        )
+                    )
             } else {
                 Text(fallback)
                     .font(size > 80 ? .system(size: 48) : .title2)

@@ -27,7 +27,7 @@ struct PhotoMapBrowserView: View {
 
     private var allLocatedPhotos: [LocatedPetPhoto] {
         photos.compactMap { photo in
-            guard let coordinate = photo.asset.location?.coordinate,
+            guard let coordinate = photo.asset?.location?.coordinate,
                   CLLocationCoordinate2DIsValid(coordinate),
                   coordinate.latitude.isFinite,
                   coordinate.longitude.isFinite else {
@@ -77,7 +77,7 @@ struct PhotoMapBrowserView: View {
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                     .padding(9)
-                                    .background(selectedPhotoID == item.id ? Color.orange : Color.blue)
+                                    .background(selectedPhotoID == item.id ? Color.blobOrange : Color.forestInk)
                                     .clipShape(Circle())
                                     .shadow(radius: 3, y: 2)
                             }
@@ -200,7 +200,7 @@ struct PhotoLocationCard: View {
                     .padding(8)
             }
             .frame(height: 140)
-            .cornerRadius(14)
+            .cornerRadius(.radiusCard)
         }
         .buttonStyle(.plain)
     }
@@ -214,7 +214,7 @@ struct PhotoLocationFullMap: View {
 
     init(photo: PetPhoto) {
         self.photo = photo
-        let coordinate = photo.asset.location?.coordinate ?? CLLocationCoordinate2D()
+        let coordinate = photo.asset?.location?.coordinate ?? CLLocationCoordinate2D()
         self.coordinate = coordinate
         _region = State(initialValue: MKCoordinateRegion(
             center: coordinate,

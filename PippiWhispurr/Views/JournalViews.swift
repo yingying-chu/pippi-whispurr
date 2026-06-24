@@ -77,12 +77,15 @@ struct JournalView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 20) {
+                    journalHeader
+
                     if !suggestions.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Suggested for You")
-                                .font(.title2)
-                                .fontWeight(.bold)
+                            Text("STORY STARTERS")
+                                .font(.pippi(10, weight: .semibold))
+                                .tracking(1.8)
+                                .foregroundColor(.forestInk.opacity(0.5))
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -104,32 +107,41 @@ struct JournalView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Your Journal")
-                            .font(.title2)
-                            .fontWeight(.bold)
+                        Text("YOUR STORIES")
+                            .font(.pippi(10, weight: .semibold))
+                            .tracking(1.8)
+                            .foregroundColor(.forestInk.opacity(0.5))
 
                         if storyStore.memories.isEmpty {
                             VStack(spacing: 12) {
-                                Image(systemName: "square.and.pencil")
-                                    .font(.system(size: 42))
-                                    .foregroundColor(.secondary)
-                                Text("Write the first entry")
-                                    .font(.headline)
+                                Image(systemName: "book.pages.fill")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.forestInk)
+                                Text("Your first story starts here")
+                                    .font(.pippi(19, weight: .extraBold))
+                                    .foregroundColor(.forestInk)
                                 Text("A birthday, a park trip, or one tiny thing you don't want to forget.")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
+                                Button("WRITE A STORY") {
+                                    editorRequest = JournalEditorRequest(suggestion: nil)
+                                }
+                                .buttonStyle(PippiPrimaryButtonStyle())
+                                .padding(.horizontal, 28)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 30)
                             .padding(.horizontal)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(16)
+                            .background(Color.honeyYellow.opacity(0.38))
+                            .clipShape(RoundedRectangle(cornerRadius: .radiusCard, style: .continuous))
                         } else {
                             ForEach(memorySections) { section in
                                 Text(section.title)
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
+                                    .font(.pippi(13, weight: .semibold))
+                                    .textCase(.uppercase)
+                                    .tracking(1.1)
+                                    .foregroundColor(.forestInk)
                                     .padding(.top, 6)
 
                                 ForEach(section.memories) { memory in
@@ -142,20 +154,12 @@ struct JournalView: View {
                         }
                     }
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 36)
             }
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Journal")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        editorRequest = JournalEditorRequest(suggestion: nil)
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("New Journal Entry")
-                }
-            }
+            .background(Color.cream.ignoresSafeArea())
+            .navigationBarHidden(true)
             .sheet(item: $editorRequest) { request in
                 NavigationView {
                     JournalEditorView(suggestion: request.suggestion)
@@ -166,6 +170,26 @@ struct JournalView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+
+    private var journalHeader: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Journal")
+                    .font(.pippi(28, weight: .extraBold))
+                    .foregroundColor(.forestInk)
+                Text("The little things worth keeping")
+                    .font(.pippiScript(15))
+                    .foregroundColor(.forestInk.opacity(0.55))
+            }
+            Spacer()
+            Button {
+                editorRequest = JournalEditorRequest(suggestion: nil)
+            } label: {
+                Label("NEW", systemImage: "plus")
+            }
+            .buttonStyle(PippiOutlineButtonStyle())
+        }
     }
 
     private var memorySections: [JournalMonthSection] {
@@ -197,8 +221,8 @@ struct JournalView: View {
             let timeGap = photo.date.timeIntervalSince(lastPhoto.date)
             let sameDay = Calendar.current.isDate(photo.date, inSameDayAs: lastPhoto.date)
             let closeEnough: Bool
-            if let firstLocation = lastPhoto.asset.location,
-               let secondLocation = photo.asset.location {
+            if let firstLocation = lastPhoto.asset?.location,
+               let secondLocation = photo.asset?.location {
                 closeEnough = firstLocation.distance(from: secondLocation) <= 20_000
             } else {
                 closeEnough = true
@@ -317,7 +341,7 @@ struct JournalView: View {
     }
 
     private func representativeCoordinate(for photos: [PetPhoto]) -> CLLocationCoordinate2D? {
-        photos.compactMap { $0.asset.location?.coordinate }.first
+        photos.compactMap { $0.asset?.location?.coordinate }.first
     }
 
     private func locationKey(for coordinate: CLLocationCoordinate2D) -> String {
@@ -400,7 +424,8 @@ private struct JournalSuggestionCard: View {
             }
 
             Text(suggestion.title)
-                .font(.headline)
+                .font(.pippi(16, weight: .semibold))
+                .foregroundColor(.forestInk)
                 .lineLimit(2)
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
@@ -412,9 +437,7 @@ private struct JournalSuggestionCard: View {
                 .padding(.bottom, 12)
         }
         .frame(width: 250)
-        .background(Color(.systemBackground))
-        .cornerRadius(18)
-        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+        .pippiCard()
     }
 }
 
@@ -430,7 +453,7 @@ private struct JournalEntryRow: View {
                     .font(.system(size: 34))
                     .frame(maxWidth: .infinity)
                     .frame(height: 130)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.forestInk.opacity(0.1))
             }
 
             if let locationName = memory.locationName, !locationName.isEmpty {
@@ -444,9 +467,8 @@ private struct JournalEntryRow: View {
             }
 
             Text(memory.title.isEmpty ? memory.kind?.displayName ?? "A memory" : memory.title)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
+                .font(.pippi(18, weight: .extraBold))
+                .foregroundColor(.forestInk)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
 
@@ -457,9 +479,7 @@ private struct JournalEntryRow: View {
                 .padding(.top, 5)
                 .padding(.bottom, 16)
         }
-        .background(Color(.systemBackground))
-        .cornerRadius(18)
-        .shadow(color: Color.black.opacity(0.05), radius: 6, y: 2)
+        .pippiCard()
     }
 }
 
@@ -571,87 +591,54 @@ struct JournalEditorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Choose the moments")
-                        .font(.title2.bold())
-
-                    if photoIdentifiers.isEmpty {
-                        Button {
-                            focusedField = nil
-                            showingScannedPhotoPicker = true
-                        } label: {
-                            VStack(spacing: 12) {
-                                Image(systemName: "photo.stack")
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.orange)
-                                Text("Choose Scanned Photos")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                Text("Start with photos. Words can come later.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 210)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .cornerRadius(18)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 2),
-                            spacing: 6
-                        ) {
-                            ForEach(photoIdentifiers, id: \.self) { identifier in
-                                ZStack(alignment: .topTrailing) {
-                                    AssetThumbnailView(identifier: identifier)
-                                        .aspectRatio(1, contentMode: .fit)
-
-                                    Button {
-                                        photoIdentifiers.removeAll { $0 == identifier }
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .font(.title3)
-                                            .symbolRenderingMode(.palette)
-                                            .foregroundStyle(.white, .black.opacity(0.65))
-                                    }
-                                    .padding(7)
-                                }
-                            }
-                        }
-
-                        Button {
-                            focusedField = nil
-                            showingScannedPhotoPicker = true
-                        } label: {
-                            Label("Add Scanned Photos", systemImage: "plus")
-                        }
-                    }
+                    journalPhotoStrip
 
                     PhotosPicker(
                         selection: $selectedPhotoItems,
                         maxSelectionCount: 20,
                         matching: .images
                     ) {
-                        Label("Choose from Photo Library Instead", systemImage: "photo.on.rectangle")
-                            .font(.subheadline)
+                        Label("CHOOSE FROM PHOTO LIBRARY", systemImage: "photo.on.rectangle")
+                            .font(.pippi(9, weight: .semibold))
+                            .tracking(1.1)
+                            .foregroundColor(.forestInk.opacity(0.65))
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 14) {
-                    TextField("Name this moment (optional)", text: $title)
-                        .font(.title2.bold())
+                    TextField("Name this moment (optional)", text: $title, axis: .vertical)
+                        .font(.pippi(28, weight: .extraBold))
+                        .foregroundColor(.forestInk)
+                        .lineLimit(2...3)
                         .focused($focusedField, equals: .title)
+
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                            Text("PROMPT")
+                        }
+                        .font(.pippi(9, weight: .semibold))
+                        .tracking(1.5)
+                        .foregroundColor(.forestInk.opacity(0.45))
+
+                        Text(writingPrompt)
+                            .font(.pippiScript(18))
+                            .foregroundColor(.forestInk)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .pippiCard()
 
                     TextEditor(text: $bodyText)
                         .focused($focusedField, equals: .story)
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: 110)
                         .padding(10)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .cornerRadius(14)
+                        .background(Color.white)
+                        .cornerRadius(.radiusCard)
                         .overlay(alignment: .topLeading) {
                             if bodyText.isEmpty && focusedField != .story {
-                                Text(writingPrompt)
+                                Text("Write the story here...")
                                     .foregroundColor(Color(.placeholderText))
                                     .padding(.horizontal, 15)
                                     .padding(.vertical, 18)
@@ -681,8 +668,12 @@ struct JournalEditorView: View {
                                         .font(.subheadline.weight(.medium))
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 8)
-                                        .foregroundColor(petIDs.contains(pet.id) ? .white : .primary)
-                                        .background(petIDs.contains(pet.id) ? Color.blue : Color(.secondarySystemFill))
+                                        .foregroundColor(petIDs.contains(pet.id) ? .cream : .forestInk)
+                                        .background(
+                                            petIDs.contains(pet.id)
+                                                ? Color.forestInk
+                                                : Color.forestInk.opacity(0.07)
+                                        )
                                         .clipShape(Capsule())
                                     }
                                     .buttonStyle(.plain)
@@ -726,14 +717,30 @@ struct JournalEditorView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding()
-                .background(Color(.secondarySystemGroupedBackground))
-                .cornerRadius(14)
+                .background(Color.white)
+                .cornerRadius(.radiusCard)
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.cream)
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(existingMemory == nil ? "New Story" : "Edit Story")
+        .navigationBarItems(
+            leading: Button("Cancel") { dismiss() }
+                .foregroundColor(.forestInk.opacity(0.4)),
+            trailing: Button("→ Save") { save() }
+                .font(.pippi(13, weight: .semibold))
+                .foregroundColor(.cream)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Color.forestInk)
+                .clipShape(Capsule())
+                .disabled(
+                    photoIdentifiers.isEmpty
+                        && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        && bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
+        )
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingScannedPhotoPicker) {
             NavigationView {
@@ -753,23 +760,89 @@ struct JournalEditorView: View {
             includeAssignedPets(for: newIdentifiers)
         }
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") { save() }
-                    .disabled(
-                        photoIdentifiers.isEmpty
-                            && title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            && bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    )
-            }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
                     focusedField = nil
                 }
             }
+        }
+    }
+
+    private var journalPhotoStrip: some View {
+        HStack(spacing: 7) {
+            if photoIdentifiers.isEmpty {
+                Button {
+                    focusedField = nil
+                    showingScannedPhotoPicker = true
+                } label: {
+                    stickyPhotoPlaceholder(color: .honeyYellow, systemImage: "photo.stack")
+                }
+                .buttonStyle(.plain)
+
+                PhotosPicker(
+                    selection: $selectedPhotoItems,
+                    maxSelectionCount: 20,
+                    matching: .images
+                ) {
+                    stickyPhotoPlaceholder(
+                        color: Color.mintSage.opacity(0.55),
+                        systemImage: "photo.on.rectangle"
+                    )
+                }
+            } else {
+                if let firstIdentifier = photoIdentifiers.first {
+                    journalPhotoTile(identifier: firstIdentifier)
+                }
+                if photoIdentifiers.count > 1 {
+                    journalPhotoTile(identifier: photoIdentifiers[1])
+                }
+            }
+
+            Button {
+                focusedField = nil
+                showingScannedPhotoPicker = true
+            } label: {
+                RoundedRectangle(cornerRadius: .radiusPhoto, style: .continuous)
+                    .stroke(
+                        Color.forestInk.opacity(0.22),
+                        style: StrokeStyle(lineWidth: 1, dash: [5])
+                    )
+                    .overlay(
+                        Image(systemName: "plus")
+                            .font(.title3)
+                            .foregroundColor(.forestInk.opacity(0.45))
+                    )
+                    .aspectRatio(1, contentMode: .fit)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func stickyPhotoPlaceholder(color: Color, systemImage: String) -> some View {
+        RoundedRectangle(cornerRadius: .radiusPhoto, style: .continuous)
+            .fill(color)
+            .overlay(
+                Image(systemName: systemImage)
+                    .font(.title2)
+                    .foregroundColor(.forestInk.opacity(0.65))
+            )
+            .aspectRatio(1, contentMode: .fit)
+    }
+
+    private func journalPhotoTile(identifier: String) -> some View {
+        ZStack(alignment: .topTrailing) {
+            AssetThumbnailView(identifier: identifier)
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: .radiusPhoto))
+            Button {
+                photoIdentifiers.removeAll { $0 == identifier }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Color.cream, Color.forestInk.opacity(0.7))
+            }
+            .padding(6)
         }
     }
 
@@ -825,6 +898,7 @@ private struct JournalScannedPhotoPicker: View {
     @EnvironmentObject private var photoManager: PhotoManager
     @Environment(\.dismiss) private var dismiss
     @State private var selection: Set<String>
+    @State private var scanAttempted = false
     let onDone: ([String]) -> Void
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 5), count: 3)
@@ -841,13 +915,32 @@ private struct JournalScannedPhotoPicker: View {
                     Image(systemName: "photo.stack")
                         .font(.system(size: 44))
                         .foregroundColor(.orange)
-                    Text("No scanned photos yet")
+                    Text(scanAttempted ? "No Pet Matches Found" : "No Scanned Photos Yet")
                         .font(.title2.bold())
-                    Text("Scan your Library first, or choose from the photo library on the previous screen.")
+                    Text(scanAttempted
+                         ? "PiPi checked the available photos but did not find a pet match. You can still choose any photo from the previous screen."
+                         : "Scan your photo library here, then choose photos without leaving this page.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
+
+                    Button {
+                        scanAttempted = true
+                        Task { await photoManager.scanAllRemainingPhotos() }
+                    } label: {
+                        if photoManager.isScanning {
+                            HStack(spacing: 10) {
+                                ProgressView().tint(.cream)
+                                Text("SCANNING \(photoManager.scannedPhotosCount) / \(photoManager.totalPhotosToScan)")
+                            }
+                        } else {
+                            Label("SCAN PHOTOS NOW", systemImage: "magnifyingglass")
+                        }
+                    }
+                    .buttonStyle(PippiPrimaryButtonStyle())
+                    .disabled(photoManager.isScanning)
+                    .padding(.horizontal, 30)
                 }
             } else {
                 ScrollView {
@@ -874,6 +967,9 @@ private struct JournalScannedPhotoPicker: View {
             }
         }
         .navigationTitle("Choose Photos")
+        .task {
+            await photoManager.prepareScanSummary()
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {

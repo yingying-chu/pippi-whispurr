@@ -16,10 +16,25 @@
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>UIAppFonts</key>
+    <array>
+        <string>BricolageGrotesque-Regular.ttf</string>
+        <string>BricolageGrotesque-SemiBold.ttf</string>
+        <string>BricolageGrotesque-ExtraBold.ttf</string>
+        <string>Caveat-Regular.ttf</string>
+    </array>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>PiPi needs access to your photo library to scan and identify photos of your pets for the pet calendar.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>PiPi needs permission to save photos.</string>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.pippiwhispurr.pet-photo-scan</string>
+    </array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>processing</string>
+    </array>
     <key>UILaunchScreen</key>
     <dict/>
 </dict>
