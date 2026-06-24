@@ -10,6 +10,7 @@ import PhotosUI
 
 struct ContentView: View {
     @EnvironmentObject private var photoManager: PhotoManager
+    @EnvironmentObject private var storyStore: StoryStore
     @State private var selectedTab: AppTab = .home
     @State private var showingScanProgress = false
 
@@ -434,9 +435,13 @@ struct LibraryView: View {
     }
 
     @EnvironmentObject private var photoManager: PhotoManager
+    @EnvironmentObject private var storyStore: StoryStore
     @State private var selectedDate: Date?
     @State private var showingScanner = false
     @State private var browseMode: BrowseMode = .photos
+    @State private var libraryScrollOffset: CGFloat = 0
+    @State private var calendarCollapsed = false
+    @State private var showingTodayMemory = false
 
     var body: some View {
         NavigationView {
@@ -446,6 +451,8 @@ struct LibraryView: View {
                     PermissionView()
                 } else if photoManager.isRestoringLibrary {
                     LibraryRestoreView()
+                } else if photoManager.petPhotos.isEmpty && !storyStore.photos.isEmpty {
+                    LibraryRecoveryView(savedCount: storyStore.photos.count)
                 } else if photoManager.petPhotos.isEmpty {
                     EmptyStateView(
                         showingScanner: $showingScanner,
@@ -466,9 +473,15 @@ struct LibraryView: View {
                         }
 
                         if browseMode == .photos {
-                            RecentPhotosView()
+                            RecentPhotosView { offset in
+                                libraryScrollOffset = offset
+                            }
                         } else if browseMode == .calendar {
-                            CalendarView(selectedDate: $selectedDate)
+                            CalendarView(
+                                selectedDate: $selectedDate,
+                                isCollapsed: $calendarCollapsed,
+                                onRecordToday: { showingTodayMemory = true }
+                            )
                             if let selectedDate {
                                 HStack {
                                     Text("\(selectedDate.formatted(.dateTime.month(.abbreviated).day()).uppercased()) · \(photoManager.filteredPhotosByDate[Calendar.current.startOfDay(for: selectedDate)]?.count ?? 0) PHOTOS")
@@ -488,7 +501,11 @@ struct LibraryView: View {
                                 .padding(.horizontal)
                                 .padding(.vertical, 8)
 
-                                PhotoGridView(date: selectedDate)
+                                PhotoGridView(date: selectedDate) { offset in
+                                    if offset < -18 {
+                                        calendarCollapsed = true
+                                    }
+                                }
                             } else {
                                 VStack(spacing: 10) {
                                     Image(systemName: "calendar.badge.clock")
@@ -515,6 +532,11 @@ struct LibraryView: View {
             .sheet(isPresented: $showingScanner) {
                 ScannerView()
             }
+            .sheet(isPresented: $showingTodayMemory) {
+                NavigationView {
+                    NewJournalEntryView(date: Date())
+                }
+            }
             .onAppear {
                 UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color.forestInk)
                 UISegmentedControl.appearance().setTitleTextAttributes(
@@ -534,23 +556,29 @@ struct LibraryView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Library")
-                    .font(.pippi(28, weight: .extraBold))
+                    .font(.pippi(28 - 8 * libraryHeaderCollapseProgress, weight: .extraBold))
                     .foregroundColor(.forestInk)
                 Text("Pet moments, all together")
                     .font(.pippiScript(15))
                     .foregroundColor(.forestInk.opacity(0.55))
+                    .opacity(1 - libraryHeaderCollapseProgress)
+                    .frame(height: 18 * (1 - libraryHeaderCollapseProgress), alignment: .top)
             }
             Spacer()
             Button {
                 showingScanner = true
             } label: {
-                Label("FIND", systemImage: "magnifyingglass")
+                Label("ADD", systemImage: "photo.badge.plus")
             }
             .buttonStyle(PippiOutlineButtonStyle())
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 10)
+        .padding(.vertical, 10 - 5 * libraryHeaderCollapseProgress)
         .background(Color.cream)
+    }
+
+    private var libraryHeaderCollapseProgress: CGFloat {
+        min(1, max(0, -libraryScrollOffset / 64))
     }
 }
 
@@ -813,6 +841,8 @@ struct EmptyStateView: View {
 }
 
 struct LibraryRestoreView: View {
+    @EnvironmentObject private var photoManager: PhotoManager
+
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -823,6 +853,49 @@ struct LibraryRestoreView: View {
             Text("Reconnecting your saved pet photos…")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            if photoManager.restoreTotalCount > 0 {
+                ProgressView(
+                    value: Double(photoManager.restoreCompletedCount),
+                    total: Double(photoManager.restoreTotalCount)
+                )
+                .tint(.forestInk)
+                .padding(.horizontal, 44)
+                Text("\(photoManager.restoreCompletedCount.formatted()) of \(photoManager.restoreTotalCount.formatted()) records checked")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.cream)
+    }
+}
+
+struct LibraryRecoveryView: View {
+    @EnvironmentObject private var photoManager: PhotoManager
+    let savedCount: Int
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 52, weight: .semibold))
+                .foregroundColor(.forestInk)
+            Text("Your Saved Library Is Still Here")
+                .font(.pippi(24, weight: .extraBold))
+                .foregroundColor(.forestInk)
+            Text("PiPi has \(savedCount.formatted()) saved photo records, but iOS has not reconnected their images yet.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 28)
+            Button("RECONNECT SAVED LIBRARY") {
+                photoManager.restorePersistedLibrary()
+            }
+            .buttonStyle(PippiPrimaryButtonStyle())
+            .padding(.horizontal, 28)
+            Button("Check Photo Access in Settings") {
+                photoManager.openAppSettings()
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundColor(.forestInk)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.cream)
@@ -833,6 +906,7 @@ struct LibraryRestoreView: View {
 
 struct RecentPhotosView: View {
     @EnvironmentObject var photoManager: PhotoManager
+    var onScrollOffset: (CGFloat) -> Void = { _ in }
 
     var recentPhotos: [PetPhoto] {
         photoManager.filteredPetPhotos
@@ -841,6 +915,14 @@ struct RecentPhotosView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: VerticalScrollOffsetPreferenceKey.self,
+                        value: proxy.frame(in: .named("libraryPhotoScroll")).minY
+                    )
+                }
+                .frame(height: 0)
+
                 HStack {
                     Text(photoManager.showsFavoritesOnly ? "Favorite Photos" : "Pet Photos")
                         .font(.headline)
@@ -872,6 +954,10 @@ struct RecentPhotosView: View {
                     .padding(.horizontal)
                 }
             }
+        }
+        .coordinateSpace(name: "libraryPhotoScroll")
+        .onPreferenceChange(VerticalScrollOffsetPreferenceKey.self) { offset in
+            onScrollOffset(offset)
         }
     }
 }

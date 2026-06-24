@@ -7,6 +7,14 @@
 
 import SwiftUI
 
+struct VerticalScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 extension Color {
     static let forestInk = Color("ForestInk")
     static let cream = Color("Cream")

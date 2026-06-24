@@ -11,6 +11,7 @@ import Photos
 struct PhotoGridView: View {
     @EnvironmentObject var photoManager: PhotoManager
     let date: Date
+    var onScrollOffset: (CGFloat) -> Void = { _ in }
 
     private var photos: [PetPhoto] {
         photoManager.photosForDate(date)
@@ -25,6 +26,14 @@ struct PhotoGridView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: VerticalScrollOffsetPreferenceKey.self,
+                        value: proxy.frame(in: .named("datedPhotoGridScroll")).minY
+                    )
+                }
+                .frame(height: 0)
+
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(formattedDate)
@@ -49,6 +58,10 @@ struct PhotoGridView: View {
                 }
                 .padding(.horizontal)
             }
+        }
+        .coordinateSpace(name: "datedPhotoGridScroll")
+        .onPreferenceChange(VerticalScrollOffsetPreferenceKey.self) { offset in
+            onScrollOffset(offset)
         }
     }
 

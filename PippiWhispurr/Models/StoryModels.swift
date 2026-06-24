@@ -151,6 +151,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
     var petIDs: Set<UUID>
     var photoIdentifiers: [String]
     var locationName: String?
+    var latitude: Double?
+    var longitude: Double?
     var kind: Kind?
     var feeling: Feeling?
     let createdAt: Date
@@ -164,6 +166,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
         petIDs: Set<UUID>,
         photoIdentifiers: [String] = [],
         locationName: String? = nil,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
         kind: Kind? = .everyday,
         feeling: Feeling? = nil,
         createdAt: Date = Date(),
@@ -176,6 +180,8 @@ struct MemoryEntry: Identifiable, Codable, Hashable {
         self.petIDs = petIDs
         self.photoIdentifiers = photoIdentifiers
         self.locationName = locationName
+        self.latitude = latitude
+        self.longitude = longitude
         self.kind = kind
         self.feeling = feeling
         self.createdAt = createdAt

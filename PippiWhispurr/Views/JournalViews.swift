@@ -34,6 +34,7 @@ struct JournalView: View {
     @EnvironmentObject private var photoManager: PhotoManager
     @State private var editorRequest: JournalEditorRequest?
     @State private var resolvedPlaceNames: [String: String] = [:]
+    @State private var scrollOffset: CGFloat = 0
 
     private var suggestions: [JournalSuggestion] {
         let usedPhotoIDs = Set(storyStore.memories.flatMap(\.photoIdentifiers))
@@ -78,7 +79,13 @@ struct JournalView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    journalHeader
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: VerticalScrollOffsetPreferenceKey.self,
+                            value: proxy.frame(in: .named("journalScroll")).minY
+                        )
+                    }
+                    .frame(height: 0)
 
                     if !suggestions.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
@@ -158,7 +165,12 @@ struct JournalView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 36)
             }
+            .coordinateSpace(name: "journalScroll")
+            .onPreferenceChange(VerticalScrollOffsetPreferenceKey.self) { scrollOffset = $0 }
             .background(Color.cream.ignoresSafeArea())
+            .safeAreaInset(edge: .top, spacing: 0) {
+                journalHeader
+            }
             .navigationBarHidden(true)
             .sheet(item: $editorRequest) { request in
                 NavigationView {
@@ -176,11 +188,13 @@ struct JournalView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Journal")
-                    .font(.pippi(28, weight: .extraBold))
+                    .font(.pippi(28 - 8 * headerCollapseProgress, weight: .extraBold))
                     .foregroundColor(.forestInk)
                 Text("The little things worth keeping")
                     .font(.pippiScript(15))
                     .foregroundColor(.forestInk.opacity(0.55))
+                    .opacity(1 - headerCollapseProgress)
+                    .frame(height: 18 * (1 - headerCollapseProgress), alignment: .top)
             }
             Spacer()
             Button {
@@ -190,6 +204,13 @@ struct JournalView: View {
             }
             .buttonStyle(PippiOutlineButtonStyle())
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10 - 5 * headerCollapseProgress)
+        .background(Color.cream)
+    }
+
+    private var headerCollapseProgress: CGFloat {
+        min(1, max(0, -scrollOffset / 64))
     }
 
     private var memorySections: [JournalMonthSection] {
@@ -556,6 +577,8 @@ struct JournalEditorView: View {
     @State private var kind: MemoryEntry.Kind
     @State private var feeling: MemoryEntry.Feeling?
     @State private var locationName: String?
+    @State private var latitude: Double?
+    @State private var longitude: Double?
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var showingScannedPhotoPicker = false
     @State private var showsDetails = false
@@ -585,6 +608,8 @@ struct JournalEditorView: View {
         _kind = State(initialValue: existingMemory?.kind ?? suggestion?.kind ?? .everyday)
         _feeling = State(initialValue: existingMemory?.feeling)
         _locationName = State(initialValue: existingMemory?.locationName ?? suggestion?.locationName)
+        _latitude = State(initialValue: existingMemory?.latitude ?? suggestion?.coordinate?.latitude)
+        _longitude = State(initialValue: existingMemory?.longitude ?? suggestion?.coordinate?.longitude)
     }
 
     var body: some View {
@@ -699,6 +724,24 @@ struct JournalEditorView: View {
                         Divider()
 
                         HStack {
+                            Label("Location", systemImage: "mappin.and.ellipse")
+                            TextField(
+                                "Home, park, city…",
+                                text: Binding(
+                                    get: { locationName ?? "" },
+                                    set: {
+                                        locationName = $0.isEmpty ? nil : $0
+                                        latitude = nil
+                                        longitude = nil
+                                    }
+                                )
+                            )
+                            .multilineTextAlignment(.trailing)
+                        }
+
+                        Divider()
+
+                        HStack {
                             Text("Feeling")
                             Spacer()
                             Picker("Feeling", selection: $feeling) {
@@ -727,7 +770,7 @@ struct JournalEditorView: View {
         .navigationBarItems(
             leading: Button("Cancel") { dismiss() }
                 .foregroundColor(.forestInk.opacity(0.4)),
-            trailing: Button("→ Save") { save() }
+            trailing: Button("→ Save") { Task { await save() } }
                 .font(.pippi(13, weight: .semibold))
                 .foregroundColor(.cream)
                 .padding(.horizontal, 12)
@@ -875,7 +918,15 @@ struct JournalEditorView: View {
         petIDs.formUnion(assigned)
     }
 
-    private func save() {
+    private func save() async {
+        if latitude == nil,
+           let place = locationName?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !place.isEmpty,
+           let placemark = try? await CLGeocoder().geocodeAddressString(place).first,
+           let coordinate = placemark.location?.coordinate {
+            latitude = coordinate.latitude
+            longitude = coordinate.longitude
+        }
         let now = Date()
         storyStore.upsertMemory(MemoryEntry(
             id: existingMemory?.id ?? UUID(),
@@ -885,6 +936,8 @@ struct JournalEditorView: View {
             petIDs: petIDs,
             photoIdentifiers: photoIdentifiers,
             locationName: locationName,
+            latitude: latitude,
+            longitude: longitude,
             kind: kind,
             feeling: feeling,
             createdAt: existingMemory?.createdAt ?? now,

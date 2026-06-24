@@ -23,8 +23,10 @@
         <string>BricolageGrotesque-ExtraBold.ttf</string>
         <string>Caveat-Regular.ttf</string>
     </array>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>PiPi needs access to your photo library to scan and identify photos of your pets for the pet calendar.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PiPi needs access to your photo library to scan and identify photos of your pets for the pet calendar.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PiPi uses your location to open the pet memory map near you and organize nearby moments.</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>PiPi needs permission to save photos.</string>
     <key>BGTaskSchedulerPermittedIdentifiers</key>

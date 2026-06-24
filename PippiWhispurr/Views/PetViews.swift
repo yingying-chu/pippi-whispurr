@@ -14,6 +14,7 @@ struct PetListView: View {
     @EnvironmentObject private var storyStore: StoryStore
     @State private var showingNewPet = false
     @State private var selectedPetID: UUID?
+    @State private var profileScrollOffset: CGFloat = 0
 
     private var activePetID: UUID? {
         if let selectedPetID,
@@ -31,20 +32,21 @@ struct PetListView: View {
                 VStack(spacing: 0) {
                     if storyStore.pets.count > 1 {
                         petSwitcher
+                            .frame(height: petSwitcherHeight, alignment: .top)
+                            .opacity(petSwitcherHeight / 104)
+                            .clipped()
                         Divider()
                     }
 
-                    PetProfileView(petID: activePetID)
+                    PetProfileView(
+                        petID: activePetID,
+                        onScrollOffset: { offset in profileScrollOffset = offset },
+                        onAddPet: { showingNewPet = true }
+                    )
                 }
             }
         }
-        .toolbar {
-            if storyStore.pets.count <= 1 {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    addPetButton
-                }
-            }
-        }
+        .navigationBarHidden(true)
         .onAppear {
             selectedPetID = activePetID
         }
@@ -56,6 +58,10 @@ struct PetListView: View {
                 PetEditorView()
             }
         }
+    }
+
+    private var petSwitcherHeight: CGFloat {
+        max(0, min(104, 104 + profileScrollOffset))
     }
 
     private var addPetButton: some View {
@@ -161,6 +167,8 @@ struct PetProfileView: View {
     @EnvironmentObject private var storyStore: StoryStore
     @EnvironmentObject private var photoManager: PhotoManager
     let petID: UUID
+    var onScrollOffset: (CGFloat) -> Void = { _ in }
+    var onAddPet: () -> Void = {}
     @State private var showingEditor = false
     @State private var showingJournalEditor = false
 
@@ -194,6 +202,14 @@ struct PetProfileView: View {
             if let pet {
                 ScrollView {
                     VStack(spacing: 16) {
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: VerticalScrollOffsetPreferenceKey.self,
+                                value: proxy.frame(in: .named("petProfileScroll")).minY
+                            )
+                        }
+                        .frame(height: 0)
+
                         ZStack(alignment: .bottomLeading) {
                             PetProfileImageView(
                                 assetIdentifier: pet.profilePhotoIdentifier,
@@ -240,6 +256,34 @@ struct PetProfileView: View {
                                     .clipShape(Capsule())
                             }
                             .padding(16)
+
+                            VStack {
+                                HStack(spacing: 8) {
+                                    Spacer()
+                                    Button(action: onAddPet) {
+                                        Image(systemName: "plus")
+                                            .font(.subheadline.bold())
+                                            .frame(width: 36, height: 36)
+                                            .background(Color.cream.opacity(0.92))
+                                            .foregroundColor(.forestInk)
+                                            .clipShape(Circle())
+                                    }
+                                    Button {
+                                        showingEditor = true
+                                    } label: {
+                                        Label("EDIT", systemImage: "pencil")
+                                            .font(.pippi(10, weight: .semibold))
+                                            .tracking(1)
+                                            .padding(.horizontal, 12)
+                                            .frame(height: 36)
+                                            .background(Color.cream.opacity(0.92))
+                                            .foregroundColor(.forestInk)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                                Spacer()
+                            }
+                            .padding(14)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, -16)
@@ -416,24 +460,9 @@ struct PetProfileView: View {
                     }
                     .padding()
                 }
-                .navigationBarBackButtonHidden(true)
-                .navigationTitle("")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            showingEditor = true
-                        } label: {
-                            Label("EDIT PROFILE", systemImage: "pencil")
-                                .font(.pippi(10, weight: .semibold))
-                                .tracking(1.1)
-                                .foregroundColor(.cream)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background(Color.forestInk.opacity(0.75))
-                                .clipShape(Capsule())
-                        }
-                    }
+                .coordinateSpace(name: "petProfileScroll")
+                .onPreferenceChange(VerticalScrollOffsetPreferenceKey.self) { offset in
+                    onScrollOffset(offset)
                 }
                 .sheet(isPresented: $showingEditor) {
                     NavigationView {

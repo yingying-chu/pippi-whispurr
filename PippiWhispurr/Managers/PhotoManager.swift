@@ -36,6 +36,8 @@ class PhotoManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
     @Published var estimatedSecondsRemaining: TimeInterval?
     @Published var lastBatchHadNoPhotos = false
     @Published var isRestoringLibrary = false
+    @Published var restoreCompletedCount = 0
+    @Published var restoreTotalCount = 0
     @Published var unavailableSavedPhotoCount = 0
     @Published var activeFilter: PetPhoto.PetType? = nil
     @Published var activePetFilterID: UUID? = nil
@@ -178,6 +180,11 @@ class PhotoManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         if authorizationStatus == .authorized || authorizationStatus == .limited {
             refreshLibrarySummary()
         }
+    }
+
+    func restorePersistedLibrary() {
+        checkAuthorizationStatus()
+        schedulePersistedPhotoRestore()
     }
 
     func setScannerPresented(_ isPresented: Bool) {
@@ -864,73 +871,76 @@ class PhotoManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         let records = storyStore.photos
         guard !records.isEmpty else {
             isRestoringLibrary = false
+            restoreCompletedCount = 0
+            restoreTotalCount = 0
             unavailableSavedPhotoCount = 0
             return
         }
 
         restoreTask?.cancel()
         isRestoringLibrary = true
+        restoreCompletedCount = 0
+        restoreTotalCount = records.count
         let importedDirectory = importedPhotosDirectory
         restoreTask = Task {
-            let restoredPhotos: [PetPhoto] = await Task.detached(priority: .userInitiated) { () -> [PetPhoto] in
-                var assetsByID: [String: PHAsset] = [:]
+            var photosByID = Dictionary(uniqueKeysWithValues: petPhotos.map { ($0.id, $0) })
+            var restoredCount = 0
 
-                // A single PhotoKit lookup with thousands of local identifiers
-                // can exceed the underlying query's parameter limit and return
-                // no assets at all. Restore in bounded chunks so a large saved
-                // Library survives every app launch.
-                let photoKitIdentifiers = records
-                    .filter { $0.localImageFilename == nil }
-                    .map(\.assetIdentifier)
-                for batchStart in stride(from: 0, to: photoKitIdentifiers.count, by: 200) {
-                    let batchEnd = min(batchStart + 200, photoKitIdentifiers.count)
-                    let batch = Array(photoKitIdentifiers[batchStart..<batchEnd])
-                    let assets = PHAsset.fetchAssets(
-                        withLocalIdentifiers: batch,
-                        options: nil
-                    )
+            // Restore progressively. The user sees saved photos return batch by
+            // batch, and one failed PhotoKit query cannot blank the whole Library.
+            for batchStart in stride(from: 0, to: records.count, by: 100) {
+                guard !Task.isCancelled else { return }
+                let batchEnd = min(batchStart + 100, records.count)
+                let recordBatch = Array(records[batchStart..<batchEnd])
+                let restoredBatch = await Task.detached(priority: .userInitiated) { () -> [PetPhoto] in
+                    let photoKitIDs = recordBatch
+                        .filter { $0.localImageFilename == nil }
+                        .map(\.assetIdentifier)
+                    let assets = PHAsset.fetchAssets(withLocalIdentifiers: photoKitIDs, options: nil)
+                    var assetsByID: [String: PHAsset] = [:]
                     assets.enumerateObjects { asset, _, _ in
                         assetsByID[asset.localIdentifier] = asset
                     }
-                }
 
-                let restored: [PetPhoto] = records.compactMap { record in
-                    if let asset = assetsByID[record.assetIdentifier] {
-                        return PetPhoto(
-                            id: record.assetIdentifier,
-                            asset: asset,
-                            date: record.captureDate,
-                            confidence: record.detectionConfidence,
-                            petType: record.detectedPetType,
-                            semanticLabels: record.semanticLabels ?? []
-                        )
+                    return recordBatch.compactMap { record in
+                        if let asset = assetsByID[record.assetIdentifier] {
+                            return PetPhoto(
+                                id: record.assetIdentifier,
+                                asset: asset,
+                                date: record.captureDate,
+                                confidence: record.detectionConfidence,
+                                petType: record.detectedPetType,
+                                semanticLabels: record.semanticLabels ?? []
+                            )
+                        }
+                        if let filename = record.localImageFilename,
+                           FileManager.default.fileExists(
+                            atPath: importedDirectory.appendingPathComponent(filename).path
+                           ) {
+                            return PetPhoto(
+                                id: record.assetIdentifier,
+                                localImageFilename: filename,
+                                date: record.captureDate,
+                                confidence: record.detectionConfidence,
+                                petType: record.detectedPetType,
+                                semanticLabels: record.semanticLabels ?? []
+                            )
+                        }
+                        return nil
                     }
-                    if let filename = record.localImageFilename,
-                       FileManager.default.fileExists(
-                        atPath: importedDirectory.appendingPathComponent(filename).path
-                       ) {
-                        return PetPhoto(
-                            id: record.assetIdentifier,
-                            localImageFilename: filename,
-                            date: record.captureDate,
-                            confidence: record.detectionConfidence,
-                            petType: record.detectedPetType,
-                            semanticLabels: record.semanticLabels ?? []
-                        )
-                    }
-                    return nil
-                }
-                return restored
-            }.value
+                }.value
 
-            guard !Task.isCancelled else { return }
-            // A restore can finish while a scan is adding fresh results. Merge the
-            // two collections so a late restore never wipes the visible Library.
-            var photosByID = Dictionary(uniqueKeysWithValues: petPhotos.map { ($0.id, $0) })
-            restoredPhotos.forEach { photosByID[$0.id] = $0 }
-            petPhotos = photosByID.values.sorted { $0.date > $1.date }
+                restoredBatch.forEach { photosByID[$0.id] = $0 }
+                restoredCount += restoredBatch.count
+                petPhotos = photosByID.values.sorted { $0.date > $1.date }
+                restoreCompletedCount = batchEnd
+                unavailableSavedPhotoCount = max(0, batchEnd - restoredCount)
+                updatePhotosByDate(petPhotos)
+                await Task.yield()
+            }
+
             favoriteIDs = Set(records.filter(\.isFavorite).map(\.assetIdentifier))
-            unavailableSavedPhotoCount = max(0, records.count - restoredPhotos.count)
+            unavailableSavedPhotoCount = max(0, records.count - restoredCount)
             updatePhotosByDate(petPhotos)
             isRestoringLibrary = false
             refreshLibrarySummary()
